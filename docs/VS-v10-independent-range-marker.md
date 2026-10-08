@@ -21,3 +21,7 @@ Mocks validate helper behavior, not actual engine allocation/destruction or visu
 ## Live test
 
 Close V9 and launch E:\GIGA\BALDRSKY_DIVEX\BaldrSky.VSPrototype.v10.exe. Enter Survival Training with two controllers. Move P1 into and out of P2's melee reach; the marker around P1 should switch through the game's native close/far states. Test different mechas/weapons with unequal reach, both names/distances, attacks, KO reset, F1, roster replacement, and leaving/re-entering. Roll back by closing V10 and launching the preserved V9.
+
+## User validation — October 8, 2026
+
+The user confirmed the range-marker result with 'perfect'. The supplied screenshot shows native markers around both fighters, with both names and numeric distances visible. This confirms the requested visual result in that session. Complete close/far transition coverage and reset/exit lifecycle coverage are not established by this screenshot alone.
