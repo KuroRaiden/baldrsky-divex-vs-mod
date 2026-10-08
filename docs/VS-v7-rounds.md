@@ -49,3 +49,5 @@ Close any other game build, then launch E:\GIGA\BALDRSKY_DIVEX\BaldrSky.VSProtot
 The game may recover/destroy fighters at another lifecycle stage not represented in the mock. Report any missing KO award, premature timeout, lost controller assignment, incorrect menu behavior, or stale health display. These remain unverified until tested live.
 
 Rollback: close V7 and launch the preserved V6 executable. No original backups, saves, assets, or earlier builds are changed. The private repository stores source and documentation only.
+
+Live update: V7 failed to award a KO after P2 removal. Its maximum-HP interpretation also needed correction. See VS-v8-KO-and-names.md; V7 remains available for reproduction.
