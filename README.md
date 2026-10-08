@@ -15,7 +15,9 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
-V10 adds a second native range-marker cursor around P1, driven by P2's melee-range state. Existing round regressions and new lifecycle/range mocks pass; visual gameplay validation is pending. See [V10 testing](docs/VS-v10-independent-range-marker.md). Build from exact V6 with scripts/build_vs_v10.ps1.
+V11 adds a three-second countdown in the window title before each round, with movement enabled and weapons/Force Crash blocked until GO. The 90-second timer begins at GO. Scoring, countdown, attack-gate and cursor mocks pass; live V11 testing is pending. See [V11 testing](docs/VS-v11-countdown.md). Build from exact V6 with scripts/build_vs_v11.ps1.
+
+V10 adds a second native range-marker cursor around P1, driven by P2's melee-range state. The user confirmed both native range indicators visually. See [V10 testing](docs/VS-v10-independent-range-marker.md). Build from exact V6 with scripts/build_vs_v10.ps1.
 
 V9 corrects an oversized pause-flag read that could block KO and timeout scoring in V8. The exact neighboring-flag regression and existing mock tests pass; live validation is pending. See [V9 fix](docs/VS-v9-pause-flag.md). Build with scripts/build_vs_v9.ps1 from exact V6.
 
