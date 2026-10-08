@@ -9,6 +9,10 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 - VS prototype: build and disassembly checks passed; two-controller gameplay validation pending. It assigns the Training opponent to controller slot 1 using the existing player-assignment routine.
 - Training camera, health, resets, and menus remain unchanged. Round scoring and a VS menu are future work.
 
+## Revised prototype v2
+
+The first VS prototype crashed during Player 2 attacks. V2 guards the two observed AI-state dereferences and unlocks the existing Training enemy roster. See [v2 findings and testing](docs/VS-v2-crash-and-roster.md). Gameplay verification is pending; use the v2 builder on the exact v1 executable.
+
 ## Start here
 
 Read [patch history](docs/BaldrSky-patch-report.md) and [prototype research and testing](docs/BaldrSky-VS-prototype.md).
