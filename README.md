@@ -15,6 +15,8 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
+V12 adds simultaneous selection on Training's F2 mecha screen: one visible roster, separate cyan/pink player markers, and joint confirmation before applying both choices. Selection and previous regression mocks pass; live V12 testing is pending. See [V12 controls and testing](docs/VS-v12-shared-mecha-select.md). Build from exact V6 with scripts/build_vs_v12.ps1.
+
 V11b adds a separate native P2 weapon/combo tracker on the right, with P2's weapon data, highlights and native hit/damage counters. Tracker routing/lifecycle and previous regression mocks pass; live V11b testing is pending. See [V11b testing](docs/VS-v11b-P2-tracker.md). Build from exact V6 with scripts/build_vs_v11b.ps1.
 
 V11 adds a three-second countdown in the window title before each round, with movement enabled and weapons/Force Crash blocked until GO. The 90-second timer begins at GO. Scoring, countdown, attack-gate and cursor mocks pass; live V11 testing is pending. See [V11 testing](docs/VS-v11-countdown.md). Build from exact V6 with scripts/build_vs_v11.ps1.
@@ -48,6 +50,7 @@ The builder checks the source hash and expected bytes and writes a separate prot
 armonte: please review the spawn wrapper and controller assignment, then test independent movement/attacks, damage, reset, opponent changes, and leaving/re-entering Training. Record the source/prototype hashes, controller models, and results in issues. Initial v2 attack and roster-selection tests passed according to the user; broader testing remains open.
 
 Use branches and pull requests for changes. Include expected original bytes, resulting hashes, and rollback instructions for any patch. Never commit game binaries or saves.
+
 
 
 
