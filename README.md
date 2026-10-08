@@ -6,12 +6,12 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 
 - Mode unlock: user confirmed all six modes launch.
 - Character-selector unlock: static byte verification passed; gameplay validation pending.
-- VS prototype: build and disassembly checks passed; two-controller gameplay validation pending. It assigns the Training opponent to controller slot 1 using the existing player-assignment routine.
+- VS prototype: build and disassembly checks passed; v2 user testing confirms Player 2 can attack without crashes and select their Training roster mecha. It assigns the Training opponent to controller slot 1 using the existing player-assignment routine.
 - Training camera, health, resets, and menus remain unchanged. Round scoring and a VS menu are future work.
 
 ## Revised prototype v2
 
-The first VS prototype crashed during Player 2 attacks. V2 guards the two observed AI-state dereferences and unlocks the existing Training enemy roster. See [v2 findings and testing](docs/VS-v2-crash-and-roster.md). Gameplay verification is pending; use the v2 builder on the exact v1 executable.
+The first VS prototype crashed during Player 2 attacks. V2 guards the two observed AI-state dereferences and unlocks the existing Training enemy roster. See [v2 findings and testing](docs/VS-v2-crash-and-roster.md). On October 8, 2026, the user confirmed Player 2 attacks no longer crash and the Player 2 roster can be selected. Reset/re-entry, every roster entry, and broad attack coverage remain unverified. Use the v2 builder on the exact v1 executable.
 
 ## Start here
 
@@ -31,6 +31,6 @@ The builder checks the source hash and expected bytes and writes a separate prot
 
 ## Collaboration
 
-armonte: please review the spawn wrapper and controller assignment, then test independent movement/attacks, damage, reset, opponent changes, and leaving/re-entering Training. Record the source/prototype hashes, controller models, and results in issues. Prototype gameplay is unverified until those tests pass.
+armonte: please review the spawn wrapper and controller assignment, then test independent movement/attacks, damage, reset, opponent changes, and leaving/re-entering Training. Record the source/prototype hashes, controller models, and results in issues. Initial v2 attack and roster-selection tests passed according to the user; broader testing remains open.
 
 Use branches and pull requests for changes. Include expected original bytes, resulting hashes, and rollback instructions for any patch. Never commit game binaries or saves.
