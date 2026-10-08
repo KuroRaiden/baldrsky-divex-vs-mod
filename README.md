@@ -15,6 +15,8 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
+Experimental v3 adds a magenta Player 2 circular indicator using the existing range-ring renderer. Visual testing is pending. See [v3 details](docs/VS-v3-player2-indicator.md). Tested v2 remains available for rollback.
+
 Read [patch history](docs/BaldrSky-patch-report.md) and [prototype research and testing](docs/BaldrSky-VS-prototype.md).
 
 Use your own local installation. No game executables, assets, saves, or analysis databases are stored here.
