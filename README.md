@@ -15,7 +15,7 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
-V3's magenta Player 2 ring is visible in user screenshots. V4 restores its circular labels. Experimental v5 addresses overlapping overhead names reported in v3/v4 and adds midpoint camera tracking with wider dynamic zoom for both players. Build and disassembly checks passed; v5 gameplay testing is pending. See [v5 details and testing](docs/VS-v5-camera-and-name.md) and [v4 ring labels](docs/VS-v4-ring-labels.md). Earlier builds remain available for rollback.
+V3's magenta Player 2 ring is visible in user screenshots. V4 restores its circular labels. Experimental v5 addresses overlapping overhead names reported in v3/v4 and adds midpoint camera tracking with wider dynamic zoom for both players. V5 runtime testing failed with black gaps and repeated scene elements. V6 clamps zoom to the original minimum while retaining midpoint tracking; runtime testing is pending and full framing at large separation remains unresolved. See [V6 correction](docs/VS-v6-camera-containment.md). See [v5 details and testing](docs/VS-v5-camera-and-name.md) and [v4 ring labels](docs/VS-v4-ring-labels.md). Earlier builds remain available for rollback.
 
 Read [patch history](docs/BaldrSky-patch-report.md) and [prototype research and testing](docs/BaldrSky-VS-prototype.md).
 
@@ -36,3 +36,4 @@ The builder checks the source hash and expected bytes and writes a separate prot
 armonte: please review the spawn wrapper and controller assignment, then test independent movement/attacks, damage, reset, opponent changes, and leaving/re-entering Training. Record the source/prototype hashes, controller models, and results in issues. Initial v2 attack and roster-selection tests passed according to the user; broader testing remains open.
 
 Use branches and pull requests for changes. Include expected original bytes, resulting hashes, and rollback instructions for any patch. Never commit game binaries or saves.
+
