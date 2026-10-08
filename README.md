@@ -7,7 +7,7 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 - Mode unlock: user confirmed all six modes launch.
 - Character-selector unlock: static byte verification passed; gameplay validation pending.
 - VS prototype: build and disassembly checks passed; v2 user testing confirms Player 2 can attack without crashes and select their Training roster mecha. It assigns the Training opponent to controller slot 1 using the existing player-assignment routine.
-- Training camera, health, resets, and menus remain unchanged. Round scoring and a VS menu are future work.
+- V5 adds shared camera framing. Training health, resets, and menus remain unchanged. Round scoring and a VS menu are future work.
 
 ## Revised prototype v2
 
@@ -15,7 +15,7 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
-V3's magenta Player 2 ring is visible in user screenshots. Experimental v4 restores its enemy count, time, target-name text, and weapon labels. Build and disassembly checks passed; v4 gameplay testing is pending. See [v4 details and testing](docs/VS-v4-ring-labels.md). V2 and v3 remain available for rollback.
+V3's magenta Player 2 ring is visible in user screenshots. V4 restores its circular labels. Experimental v5 addresses overlapping overhead names reported in v3/v4 and adds midpoint camera tracking with wider dynamic zoom for both players. Build and disassembly checks passed; v5 gameplay testing is pending. See [v5 details and testing](docs/VS-v5-camera-and-name.md) and [v4 ring labels](docs/VS-v4-ring-labels.md). Earlier builds remain available for rollback.
 
 Read [patch history](docs/BaldrSky-patch-report.md) and [prototype research and testing](docs/BaldrSky-VS-prototype.md).
 
