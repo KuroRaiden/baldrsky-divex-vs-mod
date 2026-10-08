@@ -15,6 +15,8 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
+V9 corrects an oversized pause-flag read that could block KO and timeout scoring in V8. The exact neighboring-flag regression and existing mock tests pass; live validation is pending. See [V9 fix](docs/VS-v9-pause-flag.md). Build with scripts/build_vs_v9.ps1 from exact V6.
+
 V8 corrects V7's missed KO after fighter removal and adds the missing second overhead name. Regression tests pass; live verification is pending. See [V8 fixes and testing](docs/VS-v8-KO-and-names.md). Use scripts/build_vs_v8.ps1 against exact V6.
 
 V7 adds first-to-two rounds, equal 10,000 health, and a 90-second timer, with score and results in the window title. Scoring and mock integration tests pass; live gameplay is pending. See [V7 rules and test checklist](docs/VS-v7-rounds.md). Build from exact V6 with scripts/build_vs_v7.ps1. V6 retains the conservative camera zoom limit.
@@ -40,6 +42,7 @@ The builder checks the source hash and expected bytes and writes a separate prot
 armonte: please review the spawn wrapper and controller assignment, then test independent movement/attacks, damage, reset, opponent changes, and leaving/re-entering Training. Record the source/prototype hashes, controller models, and results in issues. Initial v2 attack and roster-selection tests passed according to the user; broader testing remains open.
 
 Use branches and pull requests for changes. Include expected original bytes, resulting hashes, and rollback instructions for any patch. Never commit game binaries or saves.
+
 
 
 
