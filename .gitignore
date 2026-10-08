@@ -1,0 +1,13 @@
+*.exe
+*.dll
+*.bak
+*.iso
+*.i64
+*.idb
+*.id0
+*.id1
+*.id2
+*.nam
+*.til
+*.sav
+vs-prototype-manifest.json
