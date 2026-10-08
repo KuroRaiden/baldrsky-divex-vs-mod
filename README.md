@@ -15,7 +15,7 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
-Experimental v3 adds a magenta Player 2 circular indicator using the existing range-ring renderer. Visual testing is pending. See [v3 details](docs/VS-v3-player2-indicator.md). Tested v2 remains available for rollback.
+V3's magenta Player 2 ring is visible in user screenshots. Experimental v4 restores its enemy count, time, target-name text, and weapon labels. Build and disassembly checks passed; v4 gameplay testing is pending. See [v4 details and testing](docs/VS-v4-ring-labels.md). V2 and v3 remain available for rollback.
 
 Read [patch history](docs/BaldrSky-patch-report.md) and [prototype research and testing](docs/BaldrSky-VS-prototype.md).
 
