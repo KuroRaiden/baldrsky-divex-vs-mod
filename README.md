@@ -11,7 +11,7 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 
 ## Revised prototype v2
 
-The first VS prototype crashed during Player 2 attacks. V2 guards the two observed AI-state dereferences and unlocks the existing Training enemy roster. See [v2 findings and testing](docs/VS-v2-crash-and-roster.md). On October 8, 2026, the user confirmed Player 2 attacks no longer crash and the Player 2 roster can be selected. Reset/re-entry, every roster entry, and broad attack coverage remain unverified. Use the v2 builder on the exact v1 executable.
+The first VS prototype crashed during Player 2 attacks. V2 guards the two observed AI-state dereferences and unlocks the existing Training enemy roster. See [v2 findings and testing](docs/VS-v2-crash-and-roster.md). On October 8, 2026, the user confirmed Player 2 attacks no longer crash and the Player 2 roster can be selected. The user also confirmed Training reset and leaving/re-entering Training work. Every roster entry and broad attack coverage remain unverified. Use the v2 builder on the exact v1 executable.
 
 ## Start here
 
