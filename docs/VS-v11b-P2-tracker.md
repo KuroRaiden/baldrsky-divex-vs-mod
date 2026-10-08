@@ -38,3 +38,8 @@ These tests do not exercise the real game's rendering, live hit counters or cont
 Close the current game, launch `E:\GIGA\BALDRSKY_DIVEX\BaldrSky.VSPrototype.v11b.exe`, and enter Survival → Training with both controllers connected. Confirm the right panel shows P2's selected mecha's weapons. After GO, attack separately with each player and check that selection highlights and hit/damage values update on the correct side. Test both combo display views, a KO reset, F1 restart, P2 roster changes and leaving/re-entering Training. Check that the right panel fits and does not cover the bottom Training controls.
 
 Rollback: close V11b and launch the preserved V11 or V10 executable. The original executable and saves are unchanged.
+
+## User visual confirmation — 2026-10-08
+
+The user reported 'perfect' and provided an in-game V11b screenshot showing the right-side P2 panel, a weapon list distinct from P1's, and A/B/C rows aligned on the right. This confirms visual placement and distinct roster data. The screenshot has zero hit/damage values; independent live counter updates, countdown attack blocking and broader lifecycle tests remain unconfirmed by this image.
+
