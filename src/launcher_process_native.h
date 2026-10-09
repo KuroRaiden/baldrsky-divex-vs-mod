@@ -10,7 +10,7 @@
 struct Choice { unsigned id; std::string label; };
 static std::wstring directory;
 static std::vector<Choice> mechas,stages,music;
-static bool native_set_ended=false,native_auto_exit=false;
+static bool native_set_ended=false;
 static HANDLE battle=nullptr;
 static ULONGLONG launched=0;
 static std::string status="Choose both mechas and a stage.";
@@ -52,7 +52,7 @@ static void start_battle(unsigned p1,unsigned p2,unsigned map,unsigned setWins=2
  if(battle)return;
  VSNativeConfig cfg={{0x42565331,1,p1,p2,map,1,0,setWins},track};
  if(!valid_config(cfg.battle)||!valid_music(track)){status="Invalid selection.";return;}
- native_set_ended=false;native_auto_exit=false;
+ native_set_ended=false;
  if(existing_game()){status="Close the current game before starting another battle.";return;}
  std::wstring path=directory+L"BaldrSky.VSNative.exe";
  if(!verified_file(path,VS_NATIVE_GAME_SHA256)||!verified_file(directory+L"BaldrVSPlugin.dll",VS_NATIVE_PLUGIN_SHA256)){
@@ -75,13 +75,13 @@ static void poll_battle(){
  if(GetExitCodeProcess(battle,&code)&&code!=STILL_ACTIVE){
   VSConfig finalStatus={};std::ifstream finalFile(directory+L"BaldrVS-status.bin",std::ios::binary);
   if(finalFile.read((char*)&finalStatus,sizeof(finalStatus))&&finalStatus.magic==0x42565331&&finalStatus.state==4)native_set_ended=true;
-  CloseHandle(battle);battle=nullptr;native_auto_exit=native_set_ended;
-  status="Game closed (exit "+std::to_string(code)+").";return;
+  CloseHandle(battle);battle=nullptr;
+  status=native_set_ended?"Set finished. Choose your next battle.":"Game closed (exit "+std::to_string(code)+").";return;
  }
  VSConfig cfg={};std::ifstream input(directory+L"BaldrVS-status.bin",std::ios::binary);
  if(input.read((char*)&cfg,sizeof(cfg))&&cfg.magic==0x42565331&&cfg.version==1){
   if(cfg.state==3)status="VS battle ready. Use your two controllers.";
-  else if(cfg.state==4){native_set_ended=true;status="Set finished. Closing...";}
+  else if(cfg.state==4){native_set_ended=true;status="Set finished. Closing game...";}
   else if(cfg.state==9)status="VS plugin startup failed at step "+std::to_string(cfg.step)+".";
  }
  if(GetTickCount64()-launched>90000&&status=="Starting VS battle...")status="Check the game window: VS startup is taking longer than expected.";
@@ -92,7 +92,7 @@ static void close_game_from_launcher(){
  // child directly avoids the game's normal close-confirmation dialog.
  TerminateProcess(battle,0);
  WaitForSingleObject(battle,3000);
- CloseHandle(battle);battle=nullptr;native_set_ended=false;native_auto_exit=false;
+ CloseHandle(battle);battle=nullptr;native_set_ended=false;
  status="Game closed.";
 }
 static void choice_combo(const char* id,int& selected,const std::vector<Choice>& choices) {

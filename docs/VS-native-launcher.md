@@ -4,7 +4,7 @@ Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/key
 
 The launcher saves a validated selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
 
-The setup window has FT2, FT3, FT5 and Unlimited match presets, a music selector with Auto and Random choices, and a Close Game button. Finite sets end the game process and close the launcher automatically after the set ends, bypassing the game's confirmation prompt and preventing background threads from lingering. Close Game ends the battle started by the launcher and leaves the launcher open.
+The setup window has FT2, FT3, FT5 and Unlimited match presets, a music selector with Auto and Random choices, and a Close Game button. Finite sets end the game process automatically after the set ends, bypassing the game's confirmation prompt and preventing background threads from lingering. The launcher stays open, displays "Set finished. Choose your next battle.", and enables Start Battle again. Close Game ends the battle started by the launcher and leaves the launcher open.
 
 This replaces the split v2 launcher quarantined as `Behavior:Win32/DefenseEvasion.A!ml`. No quarantined program was restored; protection settings were not changed. The standard launcher and V11c executable are preserved.
 
