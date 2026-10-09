@@ -21,6 +21,8 @@ The original game, V11c, standard launcher and game data remain usable. The new 
 
 ## Verification
 
+2P's range ring flashes yellow for 24 battle ticks (0.4 seconds) when its fighter loses HP, alternating yellow and its normal magenta every six ticks. Further damage restarts the flash. Healing, pointer replacement and clock rewind clear the effect. The color override is scoped to the existing ring sprite call and P2 ownership. Damage-timing tests and a real FT2 startup/render/shutdown test pass; the yellow appearance still needs visual confirmation in combat.
+
 The build, protocol bounds, DLL exports, match-set boundaries, music bounds, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
 
 ## Rollback

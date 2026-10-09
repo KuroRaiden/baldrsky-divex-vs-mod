@@ -1,5 +1,6 @@
 #include "launcher_protocol.h"
 #include "round_rules.h"
+#include "damage_flash.h"
 #include <cassert>
 #include <cstdio>
 #include <initializer_list>
@@ -16,5 +17,17 @@ int main(){
  assert(round_winner(0,10000,0,10000)==0);
  assert(valid_music(0xffffffffu)&&valid_music(0xfffffffeu));
  for(unsigned i=0;i<92;i++)assert(valid_music(i));assert(!valid_music(92));
+ DamageFlash flash;
+ assert(!flash.update(1,10000,100));
+ assert(flash.update(1,9900,101));
+ assert(flash.update(1,9900,101)); // Two render passes do not consume timing.
+ assert(!flash.update(1,9900,107));
+ assert(flash.update(1,9800,108)); // A second hit restarts the flash.
+ assert(!flash.update(1,9800,132));
+ assert(flash.update(1,9700,133));
+ assert(!flash.update(1,10000,134)); // Round reset/healing clears it.
+ assert(!flash.update(2,9000,135)); // Roster replacement is not damage.
+ assert(!flash.update(2,9000,1)); // Clock rewind clears state.
+ assert(!flash.update(0,0,2));
  puts("PASS: finite set boundaries, Unlimited, draws, invalid presets and music bounds.");
 }
