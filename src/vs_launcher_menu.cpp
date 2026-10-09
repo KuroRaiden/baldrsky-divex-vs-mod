@@ -57,6 +57,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 
     // Create application window
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"BaldrVSLauncher", nullptr };
+#ifdef VS_NATIVE_START
+    wc.hIcon=::LoadIconW(wc.hInstance,MAKEINTRESOURCEW(101));
+    wc.hIconSm=(HICON)::LoadImageW(wc.hInstance,MAKEINTRESOURCEW(101),IMAGE_ICON,
+        ::GetSystemMetrics(SM_CXSMICON),::GetSystemMetrics(SM_CYSMICON),LR_SHARED);
+#endif
     ::RegisterClassExW(&wc);
     const wchar_t* windowTitle=
 #ifdef VS_NATIVE_START

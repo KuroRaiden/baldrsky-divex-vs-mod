@@ -13,6 +13,7 @@
 *.obj
 *.lib
 *.exp
+*.res
 launcher/
 launcher-split/
 src/launcher_helper_hash.h

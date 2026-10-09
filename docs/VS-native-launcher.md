@@ -1,5 +1,7 @@
 # Launcher with normal DLL loading
 
+The launcher embeds Kou's original 40x40 HUD mecha icon in Windows icon sizes 16, 24, 32, 48, 64, 128 and 256. Explorer, the title bar and taskbar use the executable's icon resource. The original sprite artwork belongs to the game's rights holders; the icon resource is provided here for this game mod.
+
 This mod targets the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The native game is derived from the supported V11c build of that version, and installation/startup checks require exact executable and plugin hashes.
 
 Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/keyboard dropdowns and starts `BaldrSky.VSNative.exe`, a separate build derived from the exact V11c executable. Windows loads `BaldrVSPlugin.dll` through a normal import. The new game entry point calls `StartVSPlugin` after DLL initialization, preserves startup registers and flags, and returns to the original entry point only after successful setup.
