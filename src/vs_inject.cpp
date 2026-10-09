@@ -1,5 +1,7 @@
+#define _CRT_RAND_S
 #include <windows.h>
 #include <cstdio>
+#include <cstdlib>
 #include "launcher_protocol.h"
 typedef unsigned int u32;
 #define U(a) (*(volatile u32 *)(a))
@@ -22,10 +24,12 @@ typedef int (__thiscall *LoadMecha)(void *,u32,int,int,int);
    legacy injection build receives this configuration from its launcher. */
 extern "C" __declspec(dllexport) volatile u32 launcher_config[8]={0x42565331,1,0,1,0,0,0,0};
 #ifdef VS_NATIVE_START
+static u32 native_music_selection=0xffffffffu;
 static void publish_native_status(){
  HANDLE file=CreateFileW(L"BaldrVS-status.bin",GENERIC_WRITE,FILE_SHARE_READ,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
  if(file!=INVALID_HANDLE_VALUE){DWORD count=0;WriteFile(file,(const void*)launcher_config,sizeof(launcher_config),&count,nullptr);CloseHandle(file);}
 }
+#include "vs_native_rounds.h"
 #endif
 static LONG CALLBACK startup_exception(EXCEPTION_POINTERS* info) {
  if(launcher_config[5]!=2 || info->ExceptionRecord->ExceptionCode!=EXCEPTION_ACCESS_VIOLATION)return EXCEPTION_CONTINUE_SEARCH;
@@ -37,6 +41,26 @@ static LONG CALLBACK startup_exception(EXCEPTION_POINTERS* info) {
  return EXCEPTION_CONTINUE_SEARCH;
 }
 static int __stdcall launcher_input(u32 manager) {
+#ifdef VS_NATIVE_START
+ if(native_close_at && GetTickCount64()>=native_close_at){
+  // The completed-set status was already written and its handle closed.
+  // End this game process directly so hidden engine threads cannot linger
+  // after the window disappears. The launcher observes the process exit.
+  native_close_at=0;TerminateProcess(GetCurrentProcess(),0);return 0;
+ }
+ if(launcher_config[5]==4)return 0;
+#ifdef VS_NATIVE_AUTOTEST
+ // Dedicated integration-test DLL only: generate a KO after each real
+ // countdown. This block is never compiled into the distributed plugin.
+ if(launcher_config[5]==3 && countdown()==0){
+  u32 wins=snapshot()&15;
+  if(launcher_config[7]==0 && wins>=6){
+   launcher_config[6]=wins;publish_native_status();DestroyWindow((HWND)U(0x8775F8));return 0;
+  }
+  u32 opponent=U(0x86AC54);if(opponent)U(opponent+5656)=0;
+ }
+#endif
+#endif
  // Complete the native Survival scene reset and reveal before handing control to VS.
  if(launcher_config[5]==1 && U(0x86AAC4) && U(0x86AAA8) && U(0x877640)
     && U(0x873A40) && U(0x873AD0) && U(0x873B60)) {
@@ -70,7 +94,9 @@ static int __stdcall launcher_input(u32 manager) {
   u32 catalog=U(0xBB211C),catalogEnd=U(0xBB2120);
   if(!U(0xAE3DFC) && playlist && playlistEnd>=playlist+32
      && catalog && catalogEnd>catalog){
-   u32 track=U(playlist+4);
+   u32 track=native_music_selection;
+   if(track==0xffffffffu)track=U(playlist+4);
+   else if(track==0xfffffffeu){unsigned random=0;if(rand_s(&random)!=0)random=GetTickCount();track=random%((catalogEnd-catalog)/64);}
    if(track<(catalogEnd-catalog)/64){
     typedef void* (__cdecl *PlayMusic)(u32,int,int,int,int,int,int);
     ((PlayMusic)0x751CA0)(track,0,100,0,0,100,0);
@@ -132,17 +158,21 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
 #ifdef VS_SPLIT_SCREEN
  if(!split_install())return 0;
 #endif
+#ifdef VS_NATIVE_START
+ if(!install_native_rounds())return 0;
+#endif
  return 1;
 }
 #ifdef VS_NATIVE_START
 // Called by the mod executable's entry point after the normal Windows DLL
 // loader finishes. DllMain does not patch code or start threads.
 extern "C" __declspec(dllexport) DWORD WINAPI StartVSPlugin(){
- VSConfig config={};DWORD count=0;
+ VSNativeConfig config={};DWORD count=0;
  HANDLE file=CreateFileW(L"BaldrVS-start.bin",GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
  bool read=file!=INVALID_HANDLE_VALUE;
  if(read){read=ReadFile(file,&config,sizeof(config),&count,nullptr)&&count==sizeof(config);CloseHandle(file);}
- DWORD ok=read?InitializeVS(&config):0;
+ native_music_selection=config.music;
+ DWORD ok=(read&&valid_music(config.music))?InitializeVS(&config.battle):0;
  if(!ok)launcher_config[5]=9;
  publish_native_status();return ok;
 }

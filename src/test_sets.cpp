@@ -1,0 +1,20 @@
+#include "launcher_protocol.h"
+#include "round_rules.h"
+#include <cassert>
+#include <cstdio>
+#include <initializer_list>
+int main(){
+ for(unsigned target:{2u,3u,5u}){
+  assert(valid_set_preset(target));
+  assert(!set_complete(target-1,target-1,target));
+  assert(set_complete(target,0,target));assert(set_complete(0,target,target));
+ }
+ assert(valid_set_preset(0));assert(!set_complete(500,1000,0));
+ for(unsigned bad:{1u,4u,6u,0xffffffffu})assert(!valid_set_preset(bad));
+ assert(round_winner(0,10000,1000,10000)==2);
+ assert(round_winner(4000,10000,4000,10000)==0);
+ assert(round_winner(0,10000,0,10000)==0);
+ assert(valid_music(0xffffffffu)&&valid_music(0xfffffffeu));
+ for(unsigned i=0;i<92;i++)assert(valid_music(i));assert(!valid_music(92));
+ puts("PASS: finite set boundaries, Unlimited, draws, invalid presets and music bounds.");
+}

@@ -7,7 +7,7 @@ set "IMGUI=%~1"
 if not exist "%IMGUI%\imgui.cpp" exit /b 2
 if not exist "%ROOT%\launcher-native\BaldrSky.VSNative.exe" exit /b 3
 pushd "%ROOT%\launcher-native"
-cl /nologo /O2 /MT /EHsc /std:c++17 /DVS_NATIVE_START /DVS_SPLIT_SCREEN /LD "%ROOT%\src\vs_inject.cpp" /link /OUT:BaldrVSPlugin.dll /EXPORT:InitializeVS=_InitializeVS@4 /EXPORT:StartVSPlugin=_StartVSPlugin@0 kernel32.lib
+cl /nologo /O2 /MT /EHsc /std:c++17 /DVS_NATIVE_START /DVS_SPLIT_SCREEN /DROUND_NATIVE_PLUGIN /TP /LD "%ROOT%\src\vs_inject.cpp" "%ROOT%\src\vs_rounds_v11c.c" /link /OUT:BaldrVSPlugin.dll /EXPORT:InitializeVS=_InitializeVS@4 /EXPORT:StartVSPlugin=_StartVSPlugin@0 kernel32.lib user32.lib
 if errorlevel 1 exit /b 4
 powershell -NoProfile -Command "$r='%ROOT%'; $sha=[Security.Cryptography.SHA256]::Create(); $g=[BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($r+'\launcher-native\BaldrSky.VSNative.exe'))).Replace('-',''); $p=[BitConverter]::ToString($sha.ComputeHash([IO.File]::ReadAllBytes($r+'\launcher-native\BaldrVSPlugin.dll'))).Replace('-',''); $sha.Dispose(); ('#define VS_NATIVE_GAME_SHA256 '+[char]34+$g+[char]34),('#define VS_NATIVE_PLUGIN_SHA256 '+[char]34+$p+[char]34) | Set-Content -LiteralPath ($r+'\src\launcher_native_hash.h')"
 if errorlevel 1 exit /b 5
@@ -21,6 +21,12 @@ cl /nologo /O2 /MT /EHsc /std:c++17 "%ROOT%\src\test_split_screen.cpp" /link /OU
 if errorlevel 1 exit /b 9
 test_split_screen.exe
 if errorlevel 1 exit /b 10
+cl /nologo /O2 /MT /EHsc /std:c++17 "%ROOT%\src\test_sets.cpp" /link /OUT:test_sets.exe
+if errorlevel 1 exit /b 11
+test_sets.exe
+if errorlevel 1 exit /b 12
 popd
 endlocal
+
+
 

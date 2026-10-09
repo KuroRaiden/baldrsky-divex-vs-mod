@@ -40,6 +40,10 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
     GetModuleFileNameW(nullptr,programPath,32768);
     directory=programPath; directory=directory.substr(0,directory.find_last_of(L"\\")+1);
     load_choices(L"mechas.tsv",mechas); load_choices(L"stages.tsv",stages);
+#ifdef VS_NATIVE_START
+    music={{0xffffffffu,"Auto"},{0xfffffffeu,"Random"}};
+    std::vector<Choice> tracks;load_choices(L"music.tsv",tracks);music.insert(music.end(),tracks.begin(),tracks.end());
+#endif
     if(arguments && !strcmp(arguments,"--smoke")){
         std::ofstream log(directory+L"launcher-smoke.txt");
         start_battle(0,1,1);log<<status<<std::endl;
@@ -60,7 +64,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #else
         L"BALDR SKY DiveX - VS Launcher";
 #endif
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, windowTitle, WS_OVERLAPPEDWINDOW, 100, 100, (int)(660 * main_scale), (int)(380 * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
+    const int windowHeight=
+#ifdef VS_NATIVE_START
+        490;
+#else
+        380;
+#endif
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, windowTitle, WS_OVERLAPPEDWINDOW, 100, 100, (int)(660 * main_scale), (int)(windowHeight * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -121,6 +131,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 
     // Main loop
     bool done = false;
+    static std::future<void> startup;
     while (!done)
     {
         // Poll and handle messages (inputs, window resize, etc.)
@@ -135,6 +146,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         }
         if (done)
             break;
+        if(startup.valid() && startup.wait_for(std::chrono::seconds(0))==std::future_status::ready)startup.get();
+        if(!startup.valid())poll_battle();
+#ifdef VS_NATIVE_START
+        if(native_auto_exit)break;
+#endif
 
         // Handle window being minimized or screen locked
         if (g_SwapChainOccluded && g_pSwapChain->Present(0, DXGI_PRESENT_TEST) == DXGI_STATUS_OCCLUDED)
@@ -169,20 +185,55 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         ImGui::SameLine(340*main_scale);ImGui::BeginGroup();
         ImGui::TextUnformatted("2P MEKA SELECT");ImGui::SetNextItemWidth(240*main_scale);
         choice_combo("##p2",p2,mechas);ImGui::EndGroup();
-        ImGui::SetCursorPos(ImVec2(200*main_scale,155*main_scale));
+        ImGui::SetCursorPos(ImVec2(
+#ifdef VS_NATIVE_START
+          42
+#else
+          200
+#endif
+          *main_scale,155*main_scale));
         ImGui::BeginGroup();ImGui::TextUnformatted("STAGE SELECT");ImGui::SetNextItemWidth(240*main_scale);
         choice_combo("##stage",stage,stages);ImGui::EndGroup();
+#ifdef VS_NATIVE_START
+        static int track=0,preset=0;
+        ImGui::SameLine(340*main_scale);ImGui::BeginGroup();
+        ImGui::TextUnformatted("MUSIC");ImGui::SetNextItemWidth(240*main_scale);
+        choice_combo("##music",track,music);ImGui::EndGroup();
+        const char* presets[]={"FT2","FT3","FT5","Unlimited"};
+        const unsigned targets[]={2,3,5,0};
+        ImGui::SetCursorPos(ImVec2(200*main_scale,240*main_scale));
+        ImGui::BeginGroup();ImGui::TextUnformatted("MATCH SET");ImGui::SetNextItemWidth(240*main_scale);
+        ImGui::Combo("##set",&preset,presets,4);ImGui::EndGroup();
+        ImGui::SetCursorPos(ImVec2(240*main_scale,325*main_scale));
+#else
         ImGui::SetCursorPos(ImVec2(240*main_scale,240*main_scale));
-        static std::future<void> startup;
-        if(startup.valid() && startup.wait_for(std::chrono::seconds(0))==std::future_status::ready)startup.get();
-        if(!startup.valid())poll_battle();
+#endif
         ImGui::BeginDisabled(startup.valid() || battle || mechas.empty() || stages.empty());
         if(ImGui::Button("START BATTLE",ImVec2(160*main_scale,40*main_scale))){
             unsigned first=mechas[p1].id,second=mechas[p2].id,map=stages[stage].id;
+#ifdef VS_NATIVE_START
+            unsigned wins=targets[preset],song=music[track].id;
+            startup=std::async(std::launch::async,[first,second,map,wins,song]{start_battle(first,second,map,wins,song);});
+#else
             startup=std::async(std::launch::async,[first,second,map]{start_battle(first,second,map);});
+#endif
         }
         ImGui::EndDisabled();
-        ImGui::SetCursorPos(ImVec2(42*main_scale,302*main_scale));
+        ImGui::SameLine(420*main_scale);
+        if(ImGui::Button("CLOSE GAME",ImVec2(160*main_scale,40*main_scale)))
+#ifdef VS_NATIVE_START
+            close_game_from_launcher();
+#else
+            if(battle){TerminateProcess(battle,0);CloseHandle(battle);battle=nullptr;status="Game closed.";}
+            else status="No game is running from this launcher.";
+#endif
+        ImGui::SetCursorPos(ImVec2(42*main_scale,
+#ifdef VS_NATIVE_START
+          390
+#else
+          302
+#endif
+          *main_scale));
         ImGui::PushTextWrapPos(io.DisplaySize.x-30*main_scale);
         ImGui::TextUnformatted(startup.valid()?"Starting game and preparing VS...":status.c_str());ImGui::PopTextWrapPos();
         ImGui::End();

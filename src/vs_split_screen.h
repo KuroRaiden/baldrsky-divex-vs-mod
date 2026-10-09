@@ -6,6 +6,26 @@ static SplitScreenState split_state;
 static bool split_rendering=false;
 static int split_x[2],split_y[2];
 extern "C" __declspec(dllexport) volatile u32 split_screen_status[4]={0,0,0,0};
+#ifdef VS_NATIVE_START
+extern "C" u32 countdown(void);
+static void native_countdown_overlay(u32 surface){
+ u32 digit=countdown(),cursor=U(0x86AC78);
+ if(!digit||digit>3||!cursor||*(BYTE*)0x874B98)return;
+ u32 resource=U(cursor+68);if(!resource)return;
+ typedef int (__thiscall *Resolve)(void*,int,int,int);
+ typedef void (__thiscall *Sprite)(void*,u32,int,int,int,int,int);
+ int index=((Resolve)0x419E30)((void*)resource,1,digit,0);
+ if(index<0)return;
+ u32 begin=U(resource+24),end=U(resource+28);
+ if(!begin||(u32)index>=(end-begin)/88)return;
+ int width=(int)U(begin+88*index+28),height=(int)U(begin+88*index+32);
+ int x=((int)U(surface+32)+(int)U(surface+40)-width)/2;
+ int y=(int)U(surface+36)+((int)U(surface+44)-(int)U(surface+36))/3-height/2;
+ ((Sprite)0x70F800)((void*)resource,surface,index,x,y,0,144);
+ int front=((Resolve)0x419E30)((void*)resource,2,digit,0);
+ if(front>=0)((Sprite)0x70F800)((void*)resource,surface,front,x,y,0,256);
+}
+#endif
 typedef int (__thiscall *PixelPosition)(void*);
 typedef void (__thiscall *RenderScene)(void*,void*,int,int,int,int);
 typedef void (__stdcall *RenderWorld)(u32,int,u32,int,int,int,int);
@@ -76,7 +96,13 @@ static void split_draw_world(u32 manager,int mask,u32 surface,int cameraX,int ca
  split_set_clip(surface,view);
 }
 static void __stdcall split_world(u32 manager,int mask,u32 surface,int x,int y,int offsetX,int offsetY){
- if(!split_rendering){((RenderWorld)0x73F6A0)(manager,mask,surface,x,y,offsetX,offsetY);return;}
+ if(!split_rendering){
+  ((RenderWorld)0x73F6A0)(manager,mask,surface,x,y,offsetX,offsetY);
+#ifdef VS_NATIVE_START
+  native_countdown_overlay(surface);
+#endif
+  return;
+ }
  SplitRect original={(int)U(surface+32),(int)U(surface+36),(int)U(surface+40),(int)U(surface+44)};
  int middle=original.left+(original.right-original.left)/2;
  SplitRect views[2]={{original.left,original.top,middle,original.bottom},{middle,original.top,original.right,original.bottom}};
@@ -103,6 +129,9 @@ static void __stdcall split_world(u32 manager,int mask,u32 surface,int x,int y,i
  // Make the active split obvious even when both cameras show similar terrain.
  typedef void (__thiscall *FillRect)(void*,int,int,int,int,u32,u32,int);
  ((FillRect)U(U(surface)+120))((void*)surface,middle-2,original.top,middle+2,original.bottom,0,0,255);
+#ifdef VS_NATIVE_START
+ native_countdown_overlay(surface);
+#endif
 }
 static bool split_hook_matches(u32 call,u32 original){
  return *(BYTE*)call==0xE8 && (u32)(call+5+*(LONG*)(call+1))==original;

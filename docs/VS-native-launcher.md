@@ -2,7 +2,9 @@
 
 Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/keyboard dropdowns and starts `BaldrSky.VSNative.exe`, a separate build derived from the exact V11c executable. Windows loads `BaldrVSPlugin.dll` through a normal import. The new game entry point calls `StartVSPlugin` after DLL initialization, preserves startup registers and flags, and returns to the original entry point only after successful setup.
 
-The launcher saves a validated 32-byte selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
+The launcher saves a validated selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
+
+The setup window has FT2, FT3, FT5 and Unlimited match presets, a music selector with Auto and Random choices, and a Close Game button. Finite sets end the game process and close the launcher automatically after the set ends, bypassing the game's confirmation prompt and preventing background threads from lingering. Close Game ends the battle started by the launcher and leaves the launcher open.
 
 This replaces the split v2 launcher quarantined as `Behavior:Win32/DefenseEvasion.A!ml`. No quarantined program was restored; protection settings were not changed. The standard launcher and V11c executable are preserved.
 
@@ -19,9 +21,11 @@ The original game, V11c, standard launcher and game data remain usable. The new 
 
 ## Verification
 
-The build, protocol bounds, DLL exports, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
+The build, protocol bounds, DLL exports, match-set boundaries, music bounds, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
 
 ## Rollback
+
+The October 9 update adds native hit-counter digits for the three-second countdown, selectable music (Auto, Random and 92 tracks), finite set presets and Unlimited. Movement remains available during countdown while attacks are blocked. Automated set/music boundary tests pass. A dedicated integration-test plugin generated two KOs through the actual countdown/round sequence and verified FT2 completion status and process exit code 0. The production plugin does not generate test KOs. Visual countdown styling and the new menu choices still await user confirmation.
 
 Close the native game and launch the standard launcher or V11c. The separate native launcher, native game, plugin, `BaldrVS-start.bin` and `BaldrVS-status.bin` can be archived afterward. Preserve the standard launcher/helper, original game backups, catalogs and all game data.
 

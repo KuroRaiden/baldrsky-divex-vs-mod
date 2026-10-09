@@ -1,6 +1,15 @@
 /* Freestanding x86 helper for the exact V6 image. No CRT or new imports. */
 #include "round_rules.h"
+#ifdef ROUND_NATIVE_PLUGIN
+#include "set_rules.h"
+#endif
 typedef unsigned int u32;
+#ifdef ROUND_NATIVE_PLUGIN
+extern "C" {
+static u32 targetWins=2;
+extern "C" void native_set_finished(u32 winner,u32 p1,u32 p2);
+extern "C" void configure_round_set(u32 target){targetWins=target;}
+#endif
 #ifndef ROUND_ADDRESS_BIAS
 #define ROUND_ADDRESS_BIAS 0
 #endif
@@ -140,6 +149,12 @@ static void show(void) {
   else ((Format)G(ROUND_FORMAT_ADDR))(title,"BALDR SKY DiveX | VS P1 %u - %u P2 | GO! | 01:30",p1wins,p2wins);
   ((WindowText)U(0x7D9328))(U(0x8775F8),title);return;
  }
+#ifdef ROUND_NATIVE_PLUGIN
+ if(finished){
+  ((Format)G(ROUND_FORMAT_ADDR))(title,"BALDR SKY DiveX | VS P1 %u - %u P2 | P%u WINS SET | Closing...",p1wins,p2wins,p1wins>=targetWins?1:2);
+  ((WindowText)U(0x7D9328))(U(0x8775F8),title);return;
+ }
+#endif
  ((Format)G(ROUND_FORMAT_ADDR))(title,
   finished ? "BALDR SKY DiveX | VS P1 %u - %u P2 | P%u WINS MATCH | F1: new match" :
   "BALDR SKY DiveX | VS P1 %u - %u P2 | %02u:%02u | Last round: %s",
@@ -177,10 +192,19 @@ __declspec(dllexport) int __fastcall tick(void *self,void *unused) {
    /* Call original directly: automatic rounds preserve the match score. */
    drop_cursor();drop_tracker();
    ((Method)G(0x5FB8C0))(self);health();start=U(0x8738EC);announced=~0u;
-   if(p1wins==2 || p2wins==2) {
+   if(
+#ifdef ROUND_NATIVE_PLUGIN
+      set_complete(p1wins,p2wins,targetWins)
+#else
+      p1wins==2 || p2wins==2
+#endif
+      ) {
     finished=1;
     /* Native Training menu state, opened by its original update next tick. */
     F((u32)self,256)=1;F((u32)self,212)=0;
+#ifdef ROUND_NATIVE_PLUGIN
+    native_set_finished(p1wins>=targetWins?1:2,p1wins,p2wins);
+#endif
    }
   }
  }
@@ -214,5 +238,8 @@ __declspec(dllexport) void __stdcall recovery(u32 fighter) {
  if(eligible() && (fighter==U(0x86AC48)||fighter==U(0x86AC54))) return;
  ((void (__stdcall *)(u32))G(0x5F8D50))(fighter);
 }
+#ifdef ROUND_NATIVE_PLUGIN
+}
+#endif
 
 
