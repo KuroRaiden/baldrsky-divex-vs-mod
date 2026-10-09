@@ -4,10 +4,13 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 
 ## Current status
 
-- Mode unlock: user confirmed all six modes launch.
-- Character-selector unlock: static byte verification passed; gameplay validation pending.
-- VS prototype: build and disassembly checks passed; v2 user testing confirms Player 2 can attack without crashes and select their Training roster mecha. It assigns the Training opponent to controller slot 1 using the existing player-assignment routine.
-- V5 adds shared camera framing. Training health, resets, and menus remain unchanged. Experimental V7 adds best-of-three rounds; a dedicated VS menu remains future work.
+V11c is the working Training VS base. The user confirmed stage selection and both weapon trackers work. It supports two controllers, independent mechas, both HUDs and range indicators, first-to-two rounds, and a three-second countdown with movement enabled.
+
+A standalone Dear ImGui launcher now provides the same 99-entry Training roster for both players and 220 Training stages. It starts the exact V11c executable and injects a small setup helper into only that new process. The UI is part of the EXE. The game file stays unchanged.
+
+The launcher remains experimental. Earlier live tests reached Training with both controller slots assigned but the intro video blocked the display. The latest fix suppresses the native movie-start call and resets/reveals the Survival scene; it builds and passes protocol/export/host-rejection checks. A fresh live test is pending because the previous windowless test process is stuck closing and holds the DLL open. See [launcher build, installation, testing and rollback](docs/VS-launcher.md).
+
+The failed V12 shared native selector is superseded. Use V11c and the separate launcher workflow.
 
 ## Revised prototype v2
 
@@ -15,7 +18,7 @@ The first VS prototype crashed during Player 2 attacks. V2 guards the two observ
 
 ## Start here
 
-V12 adds simultaneous selection on Training's F2 mecha screen: one visible roster, separate cyan/pink player markers, and joint confirmation before applying both choices. Selection and previous regression mocks pass; live V12 testing is pending. See [V12 controls and testing](docs/VS-v12-shared-mecha-select.md). Build from exact V6 with scripts/build_vs_v12.ps1.
+V11c is the current base: see [V11c tracker restoration](docs/VS-v11c-primary-tracker.md). V12's native selector failed live testing and should not be installed. Earlier notes below are historical.
 
 V11b adds a separate native P2 weapon/combo tracker on the right, with P2's weapon data, highlights and native hit/damage counters. Tracker routing/lifecycle and previous regression mocks pass; live V11b testing is pending. See [V11b testing](docs/VS-v11b-P2-tracker.md). Build from exact V6 with scripts/build_vs_v11b.ps1.
 

@@ -10,5 +10,10 @@
 *.nam
 *.til
 *.sav
+*.obj
+*.lib
+*.exp
+launcher/
+src/launcher_helper_hash.h
 vs-prototype-manifest.json
 vs-v2-manifest.json
