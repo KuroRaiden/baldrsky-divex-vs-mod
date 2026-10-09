@@ -64,5 +64,6 @@ An experimental distance-triggered vertical split-screen launcher is available s
 
 
 
-The new [native-loading launcher](docs/VS-native-launcher.md) replaces injection with normal DLL imports. Its startup, controllers and split-screen behavior were confirmed by the user. A missing-music fix is awaiting audible confirmation.
+The new [native-loading launcher](docs/VS-native-launcher.md) replaces injection with normal DLL imports. Its startup, controllers and split-screen behavior were confirmed by the user. The user also confirmed that the native build music fix works.
+
 

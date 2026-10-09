@@ -19,8 +19,9 @@ The original game, V11c, standard launcher and game data remain usable. The new 
 
 ## Verification
 
-The build, protocol bounds, DLL exports, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. Audible confirmation of that final fix is pending.
+The build, protocol bounds, DLL exports, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
 
 ## Rollback
 
 Close the native game and launch the standard launcher or V11c. The separate native launcher, native game, plugin, `BaldrVS-start.bin` and `BaldrVS-status.bin` can be archived afterward. Preserve the standard launcher/helper, original game backups, catalogs and all game data.
+
