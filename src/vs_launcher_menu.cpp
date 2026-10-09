@@ -71,7 +71,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
     io.IniFilename=nullptr;
     io.Fonts->AddFontFromFileTTF("C:\\Windows\\Fonts\\meiryo.ttc",16.0f);
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+    // Launcher navigation uses mouse and keyboard. Controllers belong to the game.
 
     // Setup Dear ImGui style
     ImGui::StyleColorsLight();

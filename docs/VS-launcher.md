@@ -1,10 +1,10 @@
 # Standalone VS launcher — experimental startup fix
 
-The launcher shows shared 1P/2P mecha dropdowns, a stage dropdown, and Start Battle. Both player dropdowns contain the same 99 native Training entries. The stage list contains 220 native Training stages. Connect both controllers before starting.
+The launcher shows shared 1P/2P mecha dropdowns, a stage dropdown, and Start Battle. Both player dropdowns contain the same 99 native Training entries. The stage list contains 220 native Training stages. The launcher uses mouse and keyboard only: gamepad navigation is disabled and its Win32 backend is compiled without XInput support. Connect both controllers before starting the game; in-game controller support is unchanged.
 
 ## Build
 
-Use Visual Studio 2022 Community C++ x86 tools and official Dear ImGui commit `2859f6723c13de3a9661b8087fb7919fa3796813` from https://github.com/ocornut/imgui. Pass that checkout's absolute directory to `scripts/build_launcher.cmd`. The build produces `launcher/BaldrVSLauncher.exe`, `BaldrVSSetup.dll`, and the two catalogs. The helper hash header is generated before compiling the launcher. Always distribute the EXE and DLL from the same build. ImGui's MIT license is included.
+Use Visual Studio 2022 Community C++ x86 tools and official Dear ImGui commit `2859f6723c13de3a9661b8087fb7919fa3796813` from https://github.com/ocornut/imgui. Pass that checkout's absolute directory to `scripts/build_launcher.cmd`. The build produces `launcher/BaldrVSLauncher.exe`, `BaldrVSSetup.dll`, and the two catalogs. The helper hash header is generated before compiling the launcher. For menu-only changes, add `menu-only` as the second build-script argument to retain the existing helper DLL. Always distribute the EXE with the helper whose hash it was compiled against. ImGui's MIT license is included.
 
 ## Installation
 
