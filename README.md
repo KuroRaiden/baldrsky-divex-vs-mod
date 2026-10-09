@@ -8,7 +8,7 @@ V11c is the working Training VS base. The user confirmed stage selection and bot
 
 A standalone Dear ImGui launcher now provides the same 99-entry Training roster for both players and 220 Training stages. It starts the exact V11c executable and injects a small setup helper into only that new process. The UI is part of the EXE. The game file stays unchanged.
 
-The launcher remains experimental. Earlier live tests reached Training with both controller slots assigned but the intro video blocked the display. The latest fix suppresses the native movie-start call and resets/reveals the Survival scene; it builds and passes protocol/export/host-rejection checks. The matching pair has now been installed. The user confirmed that the test showed the battle without the intro and that they closed it themselves; testing through the visible launcher is underway. See [launcher build, installation, testing and rollback](docs/VS-launcher.md).
+The launcher remains experimental. Earlier live tests reached Training with both controller slots assigned but the intro video blocked the display. The latest fix suppresses the native movie-start call and resets/reveals the Survival scene; it builds and passes protocol/export/host-rejection checks. The matching pair has now been installed. The user confirmed that the test showed the battle without the intro and that they closed it themselves; the user also confirmed that Start Battle in the visible launcher goes straight into VS. Launcher navigation uses mouse and keyboard only; in-game two-controller support is unchanged. See [launcher build, installation, testing and rollback](docs/VS-launcher.md).
 
 The failed V12 shared native selector is superseded. Use V11c and the separate launcher workflow.
 
