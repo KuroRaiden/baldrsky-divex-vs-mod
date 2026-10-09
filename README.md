@@ -2,6 +2,10 @@
 
 Private collaboration workspace for KuroRaiden and armonte. Goal: two human players using two controllers, based on **Survival → Training**.
 
+## Compatibility
+
+This mod and launcher target the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The build and installer require the exact supported executable hashes; other versions may be rejected or behave incorrectly.
+
 ## Current status
 
 V11c is the working Training VS base. The user confirmed stage selection and both weapon trackers work. It supports two controllers, independent mechas, both HUDs and range indicators, first-to-two rounds, and a three-second countdown with movement enabled.

@@ -1,5 +1,7 @@
 # Launcher with normal DLL loading
 
+This mod targets the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The native game is derived from the supported V11c build of that version, and installation/startup checks require exact executable and plugin hashes.
+
 Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/keyboard dropdowns and starts `BaldrSky.VSNative.exe`, a separate build derived from the exact V11c executable. Windows loads `BaldrVSPlugin.dll` through a normal import. The new game entry point calls `StartVSPlugin` after DLL initialization, preserves startup registers and flags, and returns to the original entry point only after successful setup.
 
 The launcher saves a validated selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
