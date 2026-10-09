@@ -6,7 +6,17 @@
 #include <sstream>
 #include <tlhelp32.h>
 #include "launcher_protocol.h"
+#ifdef VS_SPLIT_SCREEN
+#include "launcher_helper_hash_split.h"
+#ifdef VS_SPLIT_SCREEN_V2
+#define VS_SETUP_NAME L"BaldrVSSetup.SplitScreen.v2.dll"
+#else
+#define VS_SETUP_NAME L"BaldrVSSetup.SplitScreen.dll"
+#endif
+#else
 #include "launcher_helper_hash.h"
+#define VS_SETUP_NAME L"BaldrVSSetup.dll"
+#endif
 struct Choice { unsigned id; std::string label; };
 static std::wstring directory;
 static std::vector<Choice> mechas,stages;
@@ -68,7 +78,7 @@ static void start_battle(unsigned p1,unsigned p2,unsigned map) {
  if(!valid_config(cfg)){status="Invalid selection.";return;}
  // Game is beside this program, in the user's own installation.
  std::wstring path=directory+L"BaldrSky.VSPrototype.v11c.exe";
- std::wstring dll=directory+L"BaldrVSSetup.dll";
+ std::wstring dll=directory+VS_SETUP_NAME;
  if(!verified_file(path,"42AF4F00C5F5DF743E75512A8E04289DBCECD6DBC5F430E1B97B745898969460")){status="Place the launcher beside the verified V11c game build.";return;}
  if(!verified_file(dll,VS_HELPER_SHA256)){status="VS helper missing, changed or blocked by Windows.";return;}
  HMODULE local=LoadLibraryExW(dll.c_str(),nullptr,DONT_RESOLVE_DLL_REFERENCES);
@@ -97,7 +107,7 @@ static void start_battle(unsigned p1,unsigned p2,unsigned map) {
  ok=ok&&remoteOwner&&remote_call(pi.hProcess,remoteOwner+load-(uintptr_t)owner,memory,result)&&result;
  // If a remote thread timed out, its argument must remain allocated until the process exits.
  // On any setup failure close only the game instance this launcher created.
- uintptr_t remote=ok?find_module(pi.dwProcessId,L"BaldrVSSetup.dll"):0;
+ uintptr_t remote=ok?find_module(pi.dwProcessId,VS_SETUP_NAME):0;
  // The helper changes two native calls. Pause only the child main thread
  // after DLL loading has completed, then resume it after initialization.
  bool paused=ok&&remote&&SuspendThread(pi.hThread)!=DWORD(-1);

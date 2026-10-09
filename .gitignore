@@ -14,6 +14,8 @@
 *.lib
 *.exp
 launcher/
+launcher-split/
 src/launcher_helper_hash.h
+src/launcher_helper_hash_split.h
 vs-prototype-manifest.json
 vs-v2-manifest.json

@@ -3,6 +3,9 @@
 #include "launcher_protocol.h"
 typedef unsigned int u32;
 #define U(a) (*(volatile u32 *)(a))
+#ifdef VS_SPLIT_SCREEN
+#include "vs_split_screen.h"
+#endif
 typedef int (__stdcall *Input)(u32);
 typedef int (__thiscall *Mode)(void *,int,int);
 typedef int (__thiscall *Close)(void *,int);
@@ -81,6 +84,9 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  for(unsigned i=0;i<5;i++)if(movieCall[i]!=movieExpected[i])return 0;
  // A video already owns the window: reject this late injection safely.
  if(U(0xAE3E14))return 0;
+#ifdef VS_SPLIT_SCREEN
+ if(!split_hook_matches(0x787937,0x740150)||!split_hook_matches(0x740E8F,0x73F6A0))return 0;
+#endif
  for(unsigned i=0;i<8;i++)launcher_config[i]=((u32*)settings)[i];
  AddVectoredExceptionHandler(1,startup_exception);
  DWORD old=0;
@@ -93,6 +99,9 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  *(LONG*)(movieCall+1)=(LONG)((BYTE*)&skip_startup_movie-(movieCall+5));
  FlushInstructionCache(GetCurrentProcess(),movieCall,5);
  VirtualProtect(movieCall,5,old,&ignored);
+#ifdef VS_SPLIT_SCREEN
+ if(!split_install())return 0;
+#endif
  return 1;
 }
 BOOL WINAPI DllMain(HINSTANCE module,DWORD reason,void*) {

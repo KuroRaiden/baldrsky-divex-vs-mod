@@ -18,7 +18,15 @@ int main() {
  cfg.magic=0x42565331;cfg.version=2;if(valid_config(cfg))return 6;
  cfg.version=1;cfg.state=2;if(valid_config(cfg))return 7;
  cfg.state=1;
+#ifdef VS_SPLIT_SCREEN
+#ifdef VS_SPLIT_SCREEN_V2
+ HMODULE dll=LoadLibraryExW(L"BaldrVSSetup.SplitScreen.v2.dll",nullptr,LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
+#else
+ HMODULE dll=LoadLibraryExW(L"BaldrVSSetup.SplitScreen.dll",nullptr,LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
+#endif
+#else
  HMODULE dll=LoadLibraryExW(L"BaldrVSSetup.dll",nullptr,LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
+#endif
  if(!dll)return 8;
  auto init=(DWORD(WINAPI*)(void*))GetProcAddress(dll,"InitializeVS");
  auto exported=(VSConfig*)GetProcAddress(dll,"launcher_config");
