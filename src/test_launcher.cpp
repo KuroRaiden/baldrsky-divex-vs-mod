@@ -18,7 +18,9 @@ int main() {
  cfg.magic=0x42565331;cfg.version=2;if(valid_config(cfg))return 6;
  cfg.version=1;cfg.state=2;if(valid_config(cfg))return 7;
  cfg.state=1;
-#ifdef VS_SPLIT_SCREEN
+#ifdef VS_NATIVE_START
+ HMODULE dll=LoadLibraryExW(L"BaldrVSPlugin.dll",nullptr,LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
+#elif defined(VS_SPLIT_SCREEN)
 #ifdef VS_SPLIT_SCREEN_V2
  HMODULE dll=LoadLibraryExW(L"BaldrVSSetup.SplitScreen.v2.dll",nullptr,LOAD_LIBRARY_SEARCH_APPLICATION_DIR|LOAD_LIBRARY_SEARCH_SYSTEM32);
 #else
@@ -31,6 +33,9 @@ int main() {
  auto init=(DWORD(WINAPI*)(void*))GetProcAddress(dll,"InitializeVS");
  auto exported=(VSConfig*)GetProcAddress(dll,"launcher_config");
  if(!init||!exported)return 9;
+#ifdef VS_NATIVE_START
+ if(!GetProcAddress(dll,"StartVSPlugin"))return 13;
+#endif
  if(init(nullptr)!=0 || init(&cfg)!=0)return 10;
  FreeLibrary(dll);
  puts("PASS: protocol bounds, exports, rejection of unrelated host; no game started.");

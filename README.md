@@ -63,3 +63,6 @@ Use branches and pull requests for changes. Include expected original bytes, res
 An experimental distance-triggered vertical split-screen launcher is available separately. V2 adds a divider and per-view background camera/parallax handling, confirmed by the user. Windows subsequently blocked its launcher executable during packaging; binary distribution is blocked. See [split-screen build and verification](docs/VS-split-screen.md).
 
 
+
+The new [native-loading launcher](docs/VS-native-launcher.md) replaces injection with normal DLL imports. Its startup, controllers and split-screen behavior were confirmed by the user. A missing-music fix is awaiting audible confirmation.
+

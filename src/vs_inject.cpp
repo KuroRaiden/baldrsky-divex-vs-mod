@@ -18,8 +18,15 @@ typedef int (__cdecl *Battle)(int,int);
 typedef int (__cdecl *Mecha)(int);
 typedef int (__cdecl *Prepare)(void);
 typedef int (__thiscall *LoadMecha)(void *,u32,int,int,int);
-/* Written only by the launcher into its newly created child process. */
+/* Native startup reads selections from the launcher's settings file; the
+   legacy injection build receives this configuration from its launcher. */
 extern "C" __declspec(dllexport) volatile u32 launcher_config[8]={0x42565331,1,0,1,0,0,0,0};
+#ifdef VS_NATIVE_START
+static void publish_native_status(){
+ HANDLE file=CreateFileW(L"BaldrVS-status.bin",GENERIC_WRITE,FILE_SHARE_READ,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
+ if(file!=INVALID_HANDLE_VALUE){DWORD count=0;WriteFile(file,(const void*)launcher_config,sizeof(launcher_config),&count,nullptr);CloseHandle(file);}
+}
+#endif
 static LONG CALLBACK startup_exception(EXCEPTION_POINTERS* info) {
  if(launcher_config[5]!=2 || info->ExceptionRecord->ExceptionCode!=EXCEPTION_ACCESS_VIOLATION)return EXCEPTION_CONTINUE_SEARCH;
  char report[1024]; auto c=info->ContextRecord;
@@ -56,16 +63,33 @@ static int __stdcall launcher_input(u32 manager) {
   launcher_config[6]=13;
   ((Reveal)0x791BD0)((void*)manager,0,0,100,100,400,300,0);
   *(volatile BYTE*)0x874B98=0;
+#ifdef VS_NATIVE_START
+  // Direct Training entry has no battle script to start BGM. Reuse the
+  // native Survival playlist and player, with the game's volume controls.
+  u32 playlist=U(0x873D5C),playlistEnd=U(0x873D60);
+  u32 catalog=U(0xBB211C),catalogEnd=U(0xBB2120);
+  if(!U(0xAE3DFC) && playlist && playlistEnd>=playlist+32
+     && catalog && catalogEnd>catalog){
+   u32 track=U(playlist+4);
+   if(track<(catalogEnd-catalog)/64){
+    typedef void* (__cdecl *PlayMusic)(u32,int,int,int,int,int,int);
+    ((PlayMusic)0x751CA0)(track,0,100,0,0,100,0);
+   }
+  }
+#endif
   launcher_config[6]=4;
   launcher_config[5]=(U(0x86AC48)&&U(0x86AC54)&&U(0x86AA18)==2)?3:9;
+#ifdef VS_NATIVE_START
+  publish_native_status();
+#endif
   return 0;
  }
  return ((Input)0x79A550)(manager);
 }
 static void __stdcall skip_startup_movie(int,int,int) {}
 
-// The launcher pauses its child main thread while installing these calls.
-// Install only in the known 32-bit V11c image. No file or save writes.
+// Initialize before the native game loop starts (or while the legacy
+// launcher's child main thread is paused). Only known 32-bit images apply.
 extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  if(!settings || !valid_config(*(VSConfig*)settings))return 0;
  BYTE* image=(BYTE*)GetModuleHandleW(nullptr);
@@ -75,7 +99,13 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  auto pe=(IMAGE_NT_HEADERS32*)(image+dos->e_lfanew);
  if(pe->Signature!=IMAGE_NT_SIGNATURE || pe->FileHeader.Machine!=IMAGE_FILE_MACHINE_I386
     || pe->OptionalHeader.Magic!=IMAGE_NT_OPTIONAL_HDR32_MAGIC
-    || pe->OptionalHeader.SizeOfImage!=0x8C3000)return 0;
+    || pe->OptionalHeader.SizeOfImage!=
+#ifdef VS_NATIVE_START
+    0x8C4000
+#else
+    0x8C3000
+#endif
+    )return 0;
  BYTE expected[5]={0xE8,0x20,0x05,0xFF,0xFF};
  BYTE* call=(BYTE*)0x7AA02B;
  for(unsigned i=0;i<5;i++)if(call[i]!=expected[i])return 0;
@@ -104,6 +134,19 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
 #endif
  return 1;
 }
+#ifdef VS_NATIVE_START
+// Called by the mod executable's entry point after the normal Windows DLL
+// loader finishes. DllMain does not patch code or start threads.
+extern "C" __declspec(dllexport) DWORD WINAPI StartVSPlugin(){
+ VSConfig config={};DWORD count=0;
+ HANDLE file=CreateFileW(L"BaldrVS-start.bin",GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+ bool read=file!=INVALID_HANDLE_VALUE;
+ if(read){read=ReadFile(file,&config,sizeof(config),&count,nullptr)&&count==sizeof(config);CloseHandle(file);}
+ DWORD ok=read?InitializeVS(&config):0;
+ if(!ok)launcher_config[5]=9;
+ publish_native_status();return ok;
+}
+#endif
 BOOL WINAPI DllMain(HINSTANCE module,DWORD reason,void*) {
  if(reason==DLL_PROCESS_ATTACH)DisableThreadLibraryCalls(module);
  return TRUE;

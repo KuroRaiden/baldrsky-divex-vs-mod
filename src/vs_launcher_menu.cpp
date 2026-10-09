@@ -11,7 +11,11 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #include <tchar.h>
+#ifdef VS_NATIVE_START
+#include "launcher_process_native.h"
+#else
 #include "launcher_process.h"
+#endif
 #include <future>
 
 // Data
@@ -50,7 +54,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
     // Create application window
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"BaldrVSLauncher", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"BALDR SKY DiveX - VS Launcher", WS_OVERLAPPEDWINDOW, 100, 100, (int)(660 * main_scale), (int)(380 * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
+    const wchar_t* windowTitle=
+#ifdef VS_NATIVE_START
+        L"BALDR SKY DiveX - Native VS Launcher";
+#else
+        L"BALDR SKY DiveX - VS Launcher";
+#endif
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, windowTitle, WS_OVERLAPPEDWINDOW, 100, 100, (int)(660 * main_scale), (int)(380 * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
