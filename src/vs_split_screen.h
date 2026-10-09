@@ -110,8 +110,9 @@ static void __stdcall split_world(u32 manager,int mask,u32 surface,int x,int y,i
  BYTE savedCameraX[28],savedCameraY[28];
  std::memcpy(savedCameraX,(void*)(root+992),28);
  std::memcpy(savedCameraY,(void*)(root+1020),28);
- for(unsigned player=0;player<2;player++){
-  SplitRect view=views[player];if(split_rect_empty(view))continue;
+ for(unsigned side=0;side<2;side++){
+  unsigned player=side==0?split_state.leftPlayer:1-split_state.leftPlayer;
+  SplitRect view=views[side];if(split_rect_empty(view))continue;
   int centerX=view.left+(view.right-view.left)/2,centerY=view.top+(view.bottom-view.top)/2;
   int cameraX=split_x[player]-centerX+(int)U(manager+164);
   int cameraY=split_y[player]-centerY+(int)U(manager+168);
