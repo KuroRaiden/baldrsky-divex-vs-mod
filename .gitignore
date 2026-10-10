@@ -23,4 +23,13 @@ vs-v2-manifest.json
 
 launcher-native/
 src/launcher_native_hash.h
+equipment.tsv
+equipment.tsv.tmp
+BaldrVS-loadouts.tsv
+BaldrVS-loadouts.tsv.tmp
+BaldrVS-equipment.bin
+BaldrVS-start.bin
+BaldrVS-status.bin
+equipment-runtime-test.txt
 
+split-runtime-test.txt

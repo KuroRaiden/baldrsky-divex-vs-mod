@@ -5,6 +5,10 @@
 #include <cstdio>
 #include <initializer_list>
 int main(){
+ assert(round_seconds_remaining(0)==90&&round_seconds_remaining(179)==90);
+ assert(round_seconds_remaining(180)==90&&round_seconds_remaining(239)==90);
+ assert(round_seconds_remaining(240)==89&&round_seconds_remaining(5520)==1);
+ assert(round_seconds_remaining(5580)==0&&round_seconds_remaining(~0u)==0);
  for(unsigned target:{2u,3u,5u}){
   assert(valid_set_preset(target));
   assert(!set_complete(target-1,target-1,target));

@@ -17,6 +17,9 @@
 #include "launcher_process.h"
 #endif
 #include <future>
+#ifdef VS_NATIVE_START
+#include "equipment_menu.h"
+#endif
 
 // Data
 static ID3D11Device*            g_pd3dDevice = nullptr;
@@ -42,6 +45,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
     load_choices(L"mechas.tsv",mechas); load_choices(L"stages.tsv",stages);
 #ifdef VS_NATIVE_START
     music={{0xffffffffu,"Auto"},{0xfffffffeu,"Random"}};
+    load_equipment();
     std::vector<Choice> tracks;load_choices(L"music.tsv",tracks);music.insert(music.end(),tracks.begin(),tracks.end());
 #endif
     if(arguments && !strcmp(arguments,"--smoke")){
@@ -183,10 +187,22 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         ImGui::SetCursorPos(ImVec2(42*main_scale,42*main_scale));
         ImGui::BeginGroup();ImGui::TextUnformatted("1P MEKA SELECT");
         ImGui::SetNextItemWidth(240*main_scale);
-        choice_combo("##p1",p1,mechas);ImGui::EndGroup();
+        choice_combo("##p1",p1,mechas);
+#ifdef VS_NATIVE_START
+        ImGui::BeginDisabled(startup.valid()||battle||equipment_catalog.empty());
+        if(ImGui::Button("1P Equipment",ImVec2(240*main_scale,0)))open_equipment_editor(0,mechas[p1].id);
+        ImGui::EndDisabled();
+#endif
+        ImGui::EndGroup();
         ImGui::SameLine(340*main_scale);ImGui::BeginGroup();
         ImGui::TextUnformatted("2P MEKA SELECT");ImGui::SetNextItemWidth(240*main_scale);
-        choice_combo("##p2",p2,mechas);ImGui::EndGroup();
+        choice_combo("##p2",p2,mechas);
+#ifdef VS_NATIVE_START
+        ImGui::BeginDisabled(startup.valid()||battle||equipment_catalog.empty());
+        if(ImGui::Button("2P Equipment",ImVec2(240*main_scale,0)))open_equipment_editor(1,mechas[p2].id);
+        ImGui::EndDisabled();
+#endif
+        ImGui::EndGroup();
         ImGui::SetCursorPos(ImVec2(
 #ifdef VS_NATIVE_START
           42
@@ -215,7 +231,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
             unsigned first=mechas[p1].id,second=mechas[p2].id,map=stages[stage].id;
 #ifdef VS_NATIVE_START
             unsigned wins=targets[preset],song=music[track].id;
-            startup=std::async(std::launch::async,[first,second,map,wins,song]{start_battle(first,second,map,wins,song);});
+            VSEquipmentConfig equipment;equipment.p1=first;equipment.p2=second;
+            equipment.players[0]=equipment_profiles.get(0,first,equipment_catalog);equipment.players[1]=equipment_profiles.get(1,second,equipment_catalog);
+            startup=std::async(std::launch::async,[first,second,map,wins,song,equipment]{start_battle(first,second,map,wins,song,&equipment);});
 #else
             startup=std::async(std::launch::async,[first,second,map]{start_battle(first,second,map);});
 #endif
@@ -238,6 +256,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
           *main_scale));
         ImGui::PushTextWrapPos(io.DisplaySize.x-30*main_scale);
         ImGui::TextUnformatted(startup.valid()?"Starting game and preparing VS...":status.c_str());ImGui::PopTextWrapPos();
+#ifdef VS_NATIVE_START
+        if(equipment_catalog.empty()){
+         ImGui::BeginDisabled(startup.valid()||battle);
+         if(ImGui::Button("Load equipment catalog")){
+          equipment_scan=true;
+          startup=std::async(std::launch::async,[]{VSEquipmentConfig scan;scan.catalogOnly=1;start_battle(0,1,1,0,0xffffffffu,&scan);});
+         }ImGui::EndDisabled();
+        }
+        equipment_editor(main_scale);
+#endif
         ImGui::End();
         // Rendering
         ImGui::Render();

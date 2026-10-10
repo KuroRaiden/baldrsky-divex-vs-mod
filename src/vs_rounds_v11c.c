@@ -8,6 +8,8 @@ typedef unsigned int u32;
 extern "C" {
 static u32 targetWins=2;
 extern "C" void native_set_finished(u32 winner,u32 p1,u32 p2);
+extern "C" u32 __cdecl native_equipment_enter(u32 fighter);
+extern "C" void __cdecl native_equipment_leave(u32 scope);
 extern "C" void configure_round_set(u32 target){targetWins=target;}
 #endif
 #ifndef ROUND_ADDRESS_BIAS
@@ -32,6 +34,7 @@ static int eligible(void);
 /* Battle clock is 60 Hz; movement updates continue throughout preparation. */
 static u32 elapsed(void) {u32 now=U(0x8738EC);return now>=start?now-start:0;}
 __declspec(dllexport) u32 countdown(void) {u32 t=elapsed();return eligible() && !finished && t<180 ? (180-t+59)/60:0;}
+__declspec(dllexport) u32 round_seconds(void) {return owner && eligible()?round_seconds_remaining(elapsed()):~0u;}
 __declspec(dllexport) u32 snapshot(void) {return p1wins|(p2wins<<4)|(finished<<8)|(lastresult<<12);}
 __declspec(dllexport) u32 second_cursor(void) {return second[0];}
 static int eligible(void) {
@@ -69,12 +72,23 @@ static void sync_tracker(void) {
    This scopes selection, committed-weapon highlights and combo-history events. */
 __declspec(dllexport) int __fastcall fighter_update(void *self,void *unused,unsigned char *state) {
  typedef int (__thiscall *Update)(void *,unsigned char *);
+#ifdef ROUND_NATIVE_PLUGIN
+ u32 equipmentScope=eligible()?native_equipment_enter((u32)self):0;
+#endif
  if(trackerReady&&eligible()&&(u32)self==trackerOwner&&trackerMode==U(0x8734C4)) {
   u32 saved=U(0x86AAB0);U(0x86AAB0)=(u32)tracker;
   int r=((Update)G(0x61E390))(self,state);
-  U(0x86AAB0)=saved;return r;
+  U(0x86AAB0)=saved;
+#ifdef ROUND_NATIVE_PLUGIN
+  native_equipment_leave(equipmentScope);
+#endif
+  return r;
  }
- return ((Update)G(0x61E390))(self,state);
+ int r=((Update)G(0x61E390))(self,state);
+#ifdef ROUND_NATIVE_PLUGIN
+ native_equipment_leave(equipmentScope);
+#endif
+ return r;
 }
 __declspec(dllexport) void __fastcall tracker_render(void *self,void *unused,int surface,int x,int y) {
  typedef void (__thiscall *Render)(void *,int,int,int);
@@ -142,8 +156,7 @@ static void health(void) {
  if(b) {F(b,5652)=1;F(b,5656)=10000;}
 }
 static void show(void) {
- u32 age=elapsed(),ticks=age>=180?age-180:0;
- u32 seconds=ticks>=5400 ? 0:90-ticks/60;
+ u32 age=elapsed(),seconds=round_seconds_remaining(age);
  if(!finished && age<240) {
   if(age<180) ((Format)G(ROUND_FORMAT_ADDR))(title,"BALDR SKY DiveX | VS P1 %u - %u P2 | %u | Move freely - attacks at GO",p1wins,p2wins,(180-age+59)/60);
   else ((Format)G(ROUND_FORMAT_ADDR))(title,"BALDR SKY DiveX | VS P1 %u - %u P2 | GO! | 01:30",p1wins,p2wins);

@@ -1,39 +1,55 @@
-# Launcher with normal DLL loading
-
-The launcher embeds Kou's original 40x40 HUD mecha icon in Windows icon sizes 16, 24, 32, 48, 64, 128 and 256. Explorer, the title bar and taskbar use the executable's icon resource. The original sprite artwork belongs to the game's rights holders; the icon resource is provided here for this game mod.
-
-This mod targets the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The native game is derived from the supported V11c build of that version, and installation/startup checks require exact executable and plugin hashes.
-
-Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/keyboard dropdowns and starts `BaldrSky.VSNative.exe`, a separate build derived from the exact V11c executable. Windows loads `BaldrVSPlugin.dll` through a normal import. The new game entry point calls `StartVSPlugin` after DLL initialization, preserves startup registers and flags, and returns to the original entry point only after successful setup.
-
-The launcher saves a validated selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
-
-The setup window has FT2, FT3, FT5 and Unlimited match presets, a music selector with Auto and Random choices, and a Close Game button. Finite sets end the game process automatically after the set ends, bypassing the game's confirmation prompt and preventing background threads from lingering. The launcher stays open, displays "Set finished. Choose your next battle.", and enables Start Battle again. Close Game ends the battle started by the launcher and leaves the launcher open.
-
-This replaces the split v2 launcher quarantined as `Behavior:Win32/DefenseEvasion.A!ml`. No quarantined program was restored; protection settings were not changed. The standard launcher and V11c executable are preserved.
-
-The split-screen renderer retains the user-confirmed divider, independent backgrounds and merging. Direct Training startup omitted music initialization: the native plugin now starts the first valid track in the game's loaded Survival playlist via its native BGM player at `0x751CA0`, only if no BGM player exists. Normal game audio settings still apply. It adds no audio assets.
-
-## Build and install
-
-1. Run `scripts/build_native_game.ps1` with `-SourcePath` pointing to verified V11c and `-OutputPath` pointing to `launcher-native/BaldrSky.VSNative.exe`. The script requires V11c SHA256 `42AF4F00C5F5DF743E75512A8E04289DBCECD6DBC5F430E1B97B745898969460` and preserves existing outputs.
-2. Run `scripts/build_launcher_native.cmd` with the absolute Dear ImGui checkout path. It generates separate game/plugin hash constants, builds the launcher and plugin, and runs the protocol/host rejection and split-screen rule tests.
-3. Run `scripts/test_native_game.ps1` with source, output and launcher paths. It checks preservation of original game bytes outside the specified PE header changes, new section bounds, return to the original entry point, and absence of injection imports in the launcher.
-4. Install the three generated files beside the existing catalogs and game data. The source-only repository excludes game binaries. The distribution includes `Install-Native-Launcher.ps1` and `build_native_game.ps1` to derive the separate game executable locally from the user's V11c copy. Close the game and native launcher before installing a matching pair.
-
-The original game, V11c, standard launcher and game data remain usable. The new build writes two disposable settings/status files; normal game routines may also write game settings or saves. Keep one game instance at a time.
-
-## Verification
-
-The split camera assigns its left half to whichever fighter is farther left on the map, and its right half to the other fighter. At split entry it uses the current horizontal order immediately. During a split it retains that order within a 16-pixel horizontal buffer and swaps after a clear crossing. Each half keeps its assigned fighter's camera, terrain/parallax, ring and world effects. Player-specific health bars and move-list HUDs retain their established screen positions. Order/crossing, buffer, reset and extreme-coordinate tests pass; live crossing behavior awaits user confirmation.
-
-2P's range ring flashes yellow for 24 battle ticks (0.4 seconds) when its fighter loses HP, alternating yellow and its normal magenta every six ticks. Further damage restarts the flash. Healing, pointer replacement and clock rewind clear the effect. The color override is scoped to the existing ring sprite call and P2 ownership. Damage-timing tests and a real FT2 startup/render/shutdown test pass; the yellow appearance still needs visual confirmation in combat.
-
-The build, protocol bounds, DLL exports, match-set boundaries, music bounds, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
-
-## Rollback
-
-The October 9 update adds native hit-counter digits for the three-second countdown, selectable music (Auto, Random and 92 tracks), finite set presets and Unlimited. Movement remains available during countdown while attacks are blocked. Automated set/music boundary tests pass. A dedicated integration-test plugin generated two KOs through the actual countdown/round sequence and verified FT2 completion status and process exit code 0. The production plugin does not generate test KOs. Visual countdown styling and the new menu choices still await user confirmation.
-
-Close the native game and launch the standard launcher or V11c. The separate native launcher, native game, plugin, `BaldrVS-start.bin` and `BaldrVS-status.bin` can be archived afterward. Preserve the standard launcher/helper, original game backups, catalogs and all game data.
-
+# Launcher with normal DLL loading
+
+The launcher embeds Kou's original 40x40 HUD mecha icon in Windows icon sizes 16, 24, 32, 48, 64, 128 and 256. Explorer, the title bar and taskbar use the executable's icon resource. The original sprite artwork belongs to the game's rights holders; the icon resource is provided here for this game mod.
+
+This mod targets the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The native game is derived from the supported V11c build of that version, and installation/startup checks require exact executable and plugin hashes.
+
+Use `BaldrVSLauncher.Native.exe` in the game folder. It keeps the same mouse/keyboard dropdowns and starts `BaldrSky.VSNative.exe`, a separate build derived from the exact V11c executable. Windows loads `BaldrVSPlugin.dll` through a normal import. The new game entry point calls `StartVSPlugin` after DLL initialization, preserves startup registers and flags, and returns to the original entry point only after successful setup.
+
+The launcher saves a validated selection record to `BaldrVS-start.bin`, starts the child normally and reads `BaldrVS-status.bin` for readiness. It no longer uses remote threads, cross-process memory reads/writes, remote allocation or thread suspension. It verifies the exact game/plugin hashes and rejects an existing game instance. The plugin installs the VS startup/render hooks in its own process before the game loop. DllMain does not start threads or patch code.
+
+The setup window has FT2, FT3, FT5 and Unlimited match presets, a music selector with Auto and Random choices, and a Close Game button. Finite sets end the game process automatically after the set ends, bypassing the game's confirmation prompt and preventing background threads from lingering. The launcher stays open, displays "Set finished. Choose your next battle.", and enables Start Battle again. Close Game ends the battle started by the launcher and leaves the launcher open.
+
+## Equipment customization
+
+Choose a mecha, then use **1P Equipment** or **2P Equipment**. Both buttons open the same mouse/keyboard editor. Each player has an independent loadout for each mecha, including mirror matches. The editor provides the twelve A/B/C range slots and two Force Crash slots, original Japanese move names/descriptions, Restore defaults, Apply/Cancel, and named presets. Moving an already-equipped move to another slot clears its previous slot. Normal attacks cannot be assigned to Force Crash slots, and Force Crash/support moves cannot be assigned to normal slots. Changing mechas restores that player's saved loadout for the selected mecha.
+
+On a fresh installation, click **Load equipment catalog** once. The launcher starts a temporary game process, reads all 99 mechas' native move definitions through the game engine, writes `equipment.tsv`, and closes that temporary game. No battle or controller input is needed. Starting a normal battle also refreshes the catalog. Move descriptions and game catalogs are generated from the user's local installation and are not bundled in the source repository or release.
+
+`BaldrVS-loadouts.tsv` stores the launcher loadouts and named presets. Back up this file to preserve customization. `BaldrVS-equipment.bin` holds the next battle's validated selection and is disposable. The editor does not write the game's equipment save data; Restore defaults uses the Training assignments read from the user's game when the catalog was generated. This first version uses level 3 attacks for Kou (native level index 2) and the native level for other mechas; it does not expose upgrade levels.
+
+The plugin loads selected move resources before human equipment is constructed, scopes the shared native equipment context to the player being updated, and applies the second player's loadout whenever Training respawns the fighter. Automatic rounds and F1 reset retain both loadouts. The same-mecha case no longer shares the two players' slot choices.
+
+2P previously retained CPU level bonuses after human conversion: a Kou mirror test showed 4 dash blocks for 1P and 7 for 2P. The plugin now recalculates that native bonus category after assigning human ownership, then refreshes dash and Force Crash capacities. The corrected mirror test gives both Kou fighters 4 dash blocks; this preserves native human settings rather than copying arbitrary capacity values between mechas.
+
+This replaces the split v2 launcher quarantined as `Behavior:Win32/DefenseEvasion.A!ml`. No quarantined program was restored; protection settings were not changed. The standard launcher and V11c executable are preserved.
+
+The split-screen renderer retains the user-confirmed divider, independent backgrounds and merging. Direct Training startup omitted music initialization: the native plugin now starts the first valid track in the game's loaded Survival playlist via its native BGM player at `0x751CA0`, only if no BGM player exists. Normal game audio settings still apply. It adds no audio assets.
+
+## Build and install
+
+1. Run `scripts/build_native_game.ps1` with `-SourcePath` pointing to verified V11c and `-OutputPath` pointing to `launcher-native/BaldrSky.VSNative.exe`. The script requires V11c SHA256 `42AF4F00C5F5DF743E75512A8E04289DBCECD6DBC5F430E1B97B745898969460` and preserves existing outputs.
+2. Run `scripts/build_launcher_native.cmd` with the absolute Dear ImGui checkout path. It generates separate game/plugin hash constants, builds the launcher and plugin, and runs protocol/host rejection, split-screen, set/music and equipment/preset tests.
+3. Run `scripts/test_native_game.ps1` with source, output and launcher paths. It checks preservation of original game bytes outside the specified PE header changes, new section bounds, return to the original entry point, and absence of injection imports in the launcher.
+4. Install the three generated files beside the existing catalogs and game data. The source-only repository excludes game binaries. The distribution includes `Install-Native-Launcher.ps1` and `build_native_game.ps1` to derive the separate game executable locally from the user's V11c copy. Close the game and native launcher before installing a matching pair.
+
+The original game, V11c, standard launcher and game data remain usable. The new build writes disposable battle settings/status files and a local equipment catalog; keep `BaldrVS-loadouts.tsv` for saved loadouts. Normal game routines may also write game settings or saves. Keep one game instance at a time.
+
+## Verification
+
+Equipment unit tests cover native slot ordering, attack/Force Crash type restrictions, duplicate and unknown moves, independent same-mecha loadouts, preset round trips and malformed input. The launcher editor was checked visually and a changed move was applied through its UI. A temporary test plugin verified both fighters' native equipment records and loaded resources, observed both players attacking with distinct Kou loadouts, completed FT2 through real round resets, and confirmed equal four-block dash capacities. A second FT2 test with Rain and Masa also passed. The production plugin contains no generated test inputs or KOs. Broad controller-driven coverage of every move remains a manual gameplay check.
+
+The split camera now rotates its divider perpendicular to the line from P1 to P2. Side-by-side fighters produce a vertical split, vertically separated fighters produce a horizontal split, and diagonal separation produces a slanted split. Rotation follows the shortest angle at up to three degrees per rendered frame. Each fighter is centered within the centroid of its half-plane, with its own terrain/parallax, ring and world effects. Health bars and move-list HUDs retain their established screen positions. Existing split/merge distance thresholds remain. The v1.00 32-bit software surface composites two draw-only passes with a four-pixel seam; unknown surface implementations fall back to rectangular splitting. Unit tests cover all quadrants, centroids, pixel coverage, angle wrapping and merging. A temporary native test exercised diagonal, horizontal and reversed diagonal layouts, camera-state restoration and merging while completing FT2. Final appearance and comfort during controller-driven play still await user confirmation.
+
+2P's range ring flashes yellow for 24 battle ticks (0.4 seconds) when its fighter loses HP, alternating yellow and its normal magenta every six ticks. Further damage restarts the flash. Healing, pointer replacement and clock rewind clear the effect. The color override is scoped to the existing ring sprite call and P2 ownership. Damage-timing tests and a real FT2 startup/render/shutdown test pass; the yellow appearance still needs visual confirmation in combat.
+
+The build, protocol bounds, DLL exports, match-set boundaries, music bounds, unrelated-host rejection, split/merge rules, clipping and PE preservation checks pass. The first native startup reached Survival Training with both human-controlled fighters assigned to controller slots 0/1. Read-only diagnostics observed both split passes and merging without doubling the battle clock. The user confirmed the battle, both controllers and the split-screen visuals. They reported missing music; the native playlist music fix was then added. The user subsequently confirmed that music works in the native build.
+
+The round timer uses the native gold damage-counter digits, displaying remaining seconds as `90` through `00` at the bottom center. It shares the round clock, stays at 90 throughout preparation, and resets each round. Countdown digits reuse the blue HIT sprites at three times their original width and height through the native scaled-image renderer. Both overlays render once after the world/HUD passes, so camera zoom and slanted splitting do not duplicate or shrink them. Boundary tests cover preparation, elapsed seconds and timeout; a native FT2 run verified all three enlarged countdown digits and timer reset without crashes. Final visual placement awaits user feedback.
+
+## Rollback
+
+The October 9 update adds native hit-counter digits for the three-second countdown, selectable music (Auto, Random and 92 tracks), finite set presets and Unlimited. Movement remains available during countdown while attacks are blocked. Automated set/music boundary tests pass. A dedicated integration-test plugin generated two KOs through the actual countdown/round sequence and verified FT2 completion status and process exit code 0. The production plugin does not generate test KOs. Visual countdown styling and the new menu choices still await user confirmation.
+
+Close the native game and launch the standard launcher or V11c. The separate native launcher, native game, plugin, `BaldrVS-start.bin` and `BaldrVS-status.bin` can be archived afterward. Preserve the standard launcher/helper, original game backups, catalogs and all game data.
+

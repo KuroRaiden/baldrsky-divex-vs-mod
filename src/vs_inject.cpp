@@ -24,12 +24,16 @@ typedef int (__thiscall *LoadMecha)(void *,u32,int,int,int);
    legacy injection build receives this configuration from its launcher. */
 extern "C" __declspec(dllexport) volatile u32 launcher_config[8]={0x42565331,1,0,1,0,0,0,0};
 #ifdef VS_NATIVE_START
+#include "vs_native_equipment.h"
 static u32 native_music_selection=0xffffffffu;
 static void publish_native_status(){
  HANDLE file=CreateFileW(L"BaldrVS-status.bin",GENERIC_WRITE,FILE_SHARE_READ,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
  if(file!=INVALID_HANDLE_VALUE){DWORD count=0;WriteFile(file,(const void*)launcher_config,sizeof(launcher_config),&count,nullptr);CloseHandle(file);}
 }
 #include "vs_native_rounds.h"
+#ifdef VS_NATIVE_EQUIPMENT_AUTOTEST
+#include "test_equipment_runtime.h"
+#endif
 #endif
 static LONG CALLBACK startup_exception(EXCEPTION_POINTERS* info) {
  if(launcher_config[5]!=2 || info->ExceptionRecord->ExceptionCode!=EXCEPTION_ACCESS_VIOLATION)return EXCEPTION_CONTINUE_SEARCH;
@@ -80,6 +84,10 @@ static int __stdcall launcher_input(u32 manager) {
      path, rather than the native roster-change routine's release path. */
   U(0x86AA14)=p1;U(0x872B88)=p1;
   ((Prepare)0x5DD3B0)();
+#ifdef VS_NATIVE_START
+  if(!export_equipment_catalog()||!initialize_equipment()){launcher_config[5]=9;launcher_config[6]=20;publish_native_status();return 0;}
+  if(native_equipment.catalogOnly){launcher_config[5]=5;publish_native_status();TerminateProcess(GetCurrentProcess(),0);return 0;}
+#endif
   ((LoadMecha)0x671FC0)((void *)U(0x86AAA8),p1,127,-3,-2);
   U(0x8734E8)=p2;U(0x8734EC)=map;
   launcher_config[6]=3;
@@ -110,7 +118,11 @@ static int __stdcall launcher_input(u32 manager) {
 #endif
   return 0;
  }
- return ((Input)0x79A550)(manager);
+ int result=((Input)0x79A550)(manager);
+#ifdef VS_NATIVE_EQUIPMENT_AUTOTEST
+ equipment_runtime_test();
+#endif
+ return result;
 }
 static void __stdcall skip_startup_movie(int,int,int) {}
 
@@ -159,6 +171,7 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  if(!split_install())return 0;
 #endif
 #ifdef VS_NATIVE_START
+ if(!install_equipment_spawn())return 0;
  if(!install_native_rounds())return 0;
 #endif
  return 1;
@@ -172,6 +185,12 @@ extern "C" __declspec(dllexport) DWORD WINAPI StartVSPlugin(){
  bool read=file!=INVALID_HANDLE_VALUE;
  if(read){read=ReadFile(file,&config,sizeof(config),&count,nullptr)&&count==sizeof(config);CloseHandle(file);}
  native_music_selection=config.music;
+ native_equipment.p1=config.battle.p1;native_equipment.p2=config.battle.p2;
+ HANDLE equipmentFile=CreateFileW(L"BaldrVS-equipment.bin",GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr);
+ if(equipmentFile!=INVALID_HANDLE_VALUE){
+  DWORD size=0;bool good=ReadFile(equipmentFile,&native_equipment,sizeof(native_equipment),&size,nullptr)&&size==sizeof(native_equipment)&&equipment_shape_valid(native_equipment,config.battle.p1,config.battle.p2);
+  CloseHandle(equipmentFile);if(!good){launcher_config[5]=9;launcher_config[6]=20;publish_native_status();return 0;}
+ }
  DWORD ok=(read&&valid_music(config.music))?InitializeVS(&config.battle):0;
  if(!ok)launcher_config[5]=9;
  publish_native_status();return ok;

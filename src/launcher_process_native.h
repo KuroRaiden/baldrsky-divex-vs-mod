@@ -7,6 +7,7 @@
 #include <tlhelp32.h>
 #include "launcher_protocol.h"
 #include "launcher_native_hash.h"
+#include "equipment_profiles.h"
 struct Choice { unsigned id; std::string label; };
 static std::wstring directory;
 static std::vector<Choice> mechas,stages,music;
@@ -14,6 +15,21 @@ static bool native_set_ended=false;
 static HANDLE battle=nullptr;
 static ULONGLONG launched=0;
 static std::string status="Choose both mechas and a stage.";
+static EquipmentCatalog equipment_catalog;
+static EquipmentProfiles equipment_profiles;
+static bool equipment_scan=false;
+static void load_equipment(){
+ std::ifstream catalog(directory+L"equipment.tsv");EquipmentCatalog loaded;
+ if(read_equipment_catalog(catalog,loaded))equipment_catalog=std::move(loaded);
+ if(equipment_profiles.active.empty()&&equipment_profiles.presets.empty()){
+  std::ifstream profiles(directory+L"BaldrVS-loadouts.tsv");equipment_profiles.read(profiles,equipment_catalog);
+ }
+}
+static bool save_equipment_profiles(){
+ std::ofstream file(directory+L"BaldrVS-loadouts.tsv.tmp",std::ios::binary);equipment_profiles.write(file);file.close();
+ if(!file)return false;
+ return MoveFileExW((directory+L"BaldrVS-loadouts.tsv.tmp").c_str(),(directory+L"BaldrVS-loadouts.tsv").c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=FALSE;
+}
 static void load_choices(const wchar_t *file,std::vector<Choice>& choices) {
  std::ifstream in(directory+file);std::string line;
  while(std::getline(in,line)) {
@@ -48,7 +64,7 @@ static bool existing_game() {
  CloseHandle(snap);return found;
 }
 
-static void start_battle(unsigned p1,unsigned p2,unsigned map,unsigned setWins=2,unsigned track=0xffffffffu) {
+static void start_battle(unsigned p1,unsigned p2,unsigned map,unsigned setWins=2,unsigned track=0xffffffffu,const VSEquipmentConfig* equipment=nullptr) {
  if(battle)return;
  VSNativeConfig cfg={{0x42565331,1,p1,p2,map,1,0,setWins},track};
  if(!valid_config(cfg.battle)||!valid_music(track)){status="Invalid selection.";return;}
@@ -62,13 +78,20 @@ static void start_battle(unsigned p1,unsigned p2,unsigned map,unsigned setWins=2
  DWORD written=0;bool ok=file!=INVALID_HANDLE_VALUE;
  if(ok){ok=WriteFile(file,&cfg,sizeof(cfg),&written,nullptr)&&written==sizeof(cfg);CloseHandle(file);}
  if(!ok){status="Could not save battle selection.";return;}
+ VSEquipmentConfig loadout;if(equipment)loadout=*equipment;else{loadout.p1=p1;loadout.p2=p2;}
+ equipment_scan=loadout.catalogOnly!=0;
+ if(!equipment_shape_valid(loadout,p1,p2)){status="Invalid equipment selection.";return;}
+ file=CreateFileW((directory+L"BaldrVS-equipment.bin").c_str(),GENERIC_WRITE,0,nullptr,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,nullptr);
+ ok=file!=INVALID_HANDLE_VALUE;written=0;
+ if(ok){ok=WriteFile(file,&loadout,sizeof(loadout),&written,nullptr)&&written==sizeof(loadout);CloseHandle(file);}
+ if(!ok){status="Could not save equipment selection.";return;}
  DeleteFileW((directory+L"BaldrVS-status.bin").c_str());
  STARTUPINFOW si={sizeof(si)};si.dwFlags=STARTF_USESHOWWINDOW;si.wShowWindow=SW_SHOWNORMAL;
  PROCESS_INFORMATION pi={};std::wstring command=L"\""+path+L"\" -u";
  if(!CreateProcessW(path.c_str(),command.data(),nullptr,nullptr,FALSE,0,nullptr,directory.c_str(),&si,&pi)){
   status="Could not start game (Windows error "+std::to_string(GetLastError())+").";return;
  }
- CloseHandle(pi.hThread);battle=pi.hProcess;launched=GetTickCount64();status="Starting VS battle...";
+ CloseHandle(pi.hThread);battle=pi.hProcess;launched=GetTickCount64();status=equipment_scan?"Reading the game's equipment catalog...":"Starting VS battle...";
 }
 static void poll_battle(){
  if(!battle)return;DWORD code=0;
@@ -76,7 +99,10 @@ static void poll_battle(){
   VSConfig finalStatus={};std::ifstream finalFile(directory+L"BaldrVS-status.bin",std::ios::binary);
   if(finalFile.read((char*)&finalStatus,sizeof(finalStatus))&&finalStatus.magic==0x42565331&&finalStatus.state==4)native_set_ended=true;
   CloseHandle(battle);battle=nullptr;
-  status=native_set_ended?"Set finished. Choose your next battle.":"Game closed (exit "+std::to_string(code)+").";return;
+  load_equipment();
+  status=equipment_scan?(equipment_catalog.empty()?"Equipment scan failed. Check the game files.":"Equipment catalog ready. Choose Equipment for either player."):
+    native_set_ended?"Set finished. Choose your next battle.":"Game closed (exit "+std::to_string(code)+").";
+  equipment_scan=false;return;
  }
  VSConfig cfg={};std::ifstream input(directory+L"BaldrVS-status.bin",std::ios::binary);
  if(input.read((char*)&cfg,sizeof(cfg))&&cfg.magic==0x42565331&&cfg.version==1){

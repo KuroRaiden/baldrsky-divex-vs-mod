@@ -1,4 +1,8 @@
 /* Integration bounds each health maximum to 10000, preventing overflow. */
+static unsigned round_seconds_remaining(unsigned age) {
+ unsigned ticks=age>=180?age-180:0;
+ return ticks>=5400?0:90-ticks/60;
+}
 static int round_winner(int h1,int m1,int h2,int m2) {
  if(h1<=0 || h2<=0) return h1<=0 ? (h2<=0?0:2):1;
  if(m1<=0 || m2<=0) return 0;

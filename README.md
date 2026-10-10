@@ -8,6 +8,8 @@ This mod and launcher target the original **BALDR SKY DiveX version 1.00** execu
 
 ## Current status
 
+The **Native VS Launcher** is the current launcher. It uses normal DLL loading, rotating position-based split cameras, FT2/FT3/FT5/Unlimited, music selection, a 3× visual countdown, bottom-center gold seconds timer and independent equipment editors for both players. Finishing a finite set closes the game while leaving the launcher open. Equipment loadouts and named presets are saved per player and mecha; 2P's leftover CPU dash/Force Crash bonuses are removed. See [native launcher setup, equipment and verification](docs/VS-native-launcher.md). Earlier injection-launcher notes below are historical.
+
 V11c is the working Training VS base. The user confirmed stage selection and both weapon trackers work. It supports two controllers, independent mechas, both HUDs and range indicators, first-to-two rounds, and a three-second countdown with movement enabled.
 
 A standalone Dear ImGui launcher now provides the same 99-entry Training roster for both players and 220 Training stages. It starts the exact V11c executable and injects a small setup helper into only that new process. The UI is part of the EXE. The game file stays unchanged.
