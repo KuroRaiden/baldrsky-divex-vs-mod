@@ -8,11 +8,11 @@
 #include "equipment_rules.h"
 
 namespace online {
-constexpr uint32_t wire_version=3, input_schema=1;
+constexpr uint32_t wire_version=4, input_schema=1;
 constexpr size_t max_payload=1152, header_size=28;
 using Token=std::array<uint8_t,16>;
 using Digest=std::array<uint8_t,32>;
-enum class Kind:uint8_t {Hello=1,Ack=2,Data=3,Bye=4,Result=5,Chat=6,ChatAck=7};
+enum class Kind:uint8_t {Hello=1,Ack=2,Data=3,Bye=4,Result=5,Chat=6,ChatAck=7,Ready=8,ReadyAck=9,Start=10,StartAck=11};
 inline void put32(std::vector<uint8_t>& b,uint32_t n){for(unsigned i=0;i<4;i++)b.push_back(uint8_t(n>>(8*i)));}
 inline uint32_t get32(const uint8_t* b){return uint32_t(b[0])|(uint32_t(b[1])<<8)|(uint32_t(b[2])<<16)|(uint32_t(b[3])<<24);}
 struct Packet {Kind kind;unsigned role;const uint8_t* data;size_t size;};
@@ -24,7 +24,7 @@ inline std::vector<uint8_t> envelope(Kind kind,unsigned role,const Token& token,
 }
 inline bool decode(const uint8_t* data,size_t size,const Token& token,Packet& out){
  if(!data||size<header_size||size>header_size+max_payload||memcmp(data,"BVON",4)||data[4]!=wire_version
-    ||data[5]<1||data[5]>7||data[6]>1||data[7]||memcmp(data+8,token.data(),16))return false;
+    ||data[5]<1||data[5]>11||data[6]>1||data[7]||memcmp(data+8,token.data(),16))return false;
  uint32_t n=get32(data+24);if(n!=size-header_size)return false;
  out={Kind(data[5]),data[6],data+header_size,n};return true;
 }
@@ -67,7 +67,7 @@ constexpr bool native_rollback_verified=false;
 inline Manifest connection_test_manifest(){
  static_assert(!native_rollback_verified,"Implement native match agreement before enabling online combat");
  Manifest m;for(auto& slots:m.equipment)slots.fill(equipment_empty);
- constexpr char build[]="BALDR-CONNECTION-PROBE-v3";
+ constexpr char build[]="BALDR-CONNECTION-PROBE-v4";
  memcpy(m.build.data(),build,sizeof(build)-1);return m;
 }
 }

@@ -1,4 +1,4 @@
-BALDR SKY DiveX - Online connection/chat preview (wire v3)
+BALDR SKY DiveX - Online connection/chat preview (wire v4)
 
 This is a connection and player-chat test. Native online battles are still
 in development. The stable local VS launcher is a separate download.
@@ -11,18 +11,24 @@ ON BOTH COMPUTERS
 5. One player clicks Create link code / Host, then Copy code and shares it.
 6. The other player pastes the code into LINK CODE and clicks Join with link code.
 7. Once connected, the right pane shows your peer's name. Type chat and press
-   Enter or Send. The connection stays open after the synchronization test.
+   Enter or Send. Each player checks Ready (you) when prepared. Both checks
+   are required before the synchronization test starts automatically.
+8. Ready/unready changes appear as named messages in both chat histories.
+   You can uncheck before start. Readiness resets on disconnect. The connection
+   stays open for chat after the synchronization test.
 
 Leave Use AutoPunch (Internet) enabled for an Internet test. For a LAN test,
 Advanced can override the advertised IPv4 address. Link codes contain the
 host address and a room key; share them only with the intended player.
 Names are self-chosen display labels, not verified identities.
 
-Both computers must use this wire-v3 build. Connection/chat needs no game
+Both computers must use this wire-v4 build. Connection/chat needs no game
 installation, native plugin or equipment catalog. Dropdown name lists are
 embedded in the EXE and included as TSV files. The displayed selections do
 not affect this standalone synchronization test; online Start Battle is
-disabled. Local game startup requires your separately installed native build.
+disabled. For local VS, uncheck Online setup and install the matching native VS game
+EXE/plugin, or run BaldrVSLauncher.Native.exe from your local VS installation.
+The original BaldrSky.exe alone cannot be used by this native VS launcher.
 
 If a cloud PC shows Roster unavailable or no online controls, it is running
 an older build. Close it and extract this complete package, replacing the

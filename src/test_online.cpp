@@ -17,11 +17,13 @@ int main(int argc,char** argv){
    else{options.punch=true;std::string path=argv[i];options.punchPath.assign(path.begin(),path.end());}
   }
   options.match=connection_test_manifest();
-  auto chat=chatTest?std::make_shared<ChatMailbox>(options.role,options.playerName):nullptr;
+  auto chat=std::make_shared<ChatMailbox>(options.role,options.playerName);
   std::atomic_bool cancel=false;bool early=false,late=false;uint64_t completeAt=0;
+  uint64_t connectedAt=0;unsigned readyStage=0;bool gateHeld=false,started=false;
   auto verifyChat=[&](){
    if(!chat)return false;auto snapshot=chat->snapshot();if(snapshot.localName!=options.playerName||snapshot.peerName!=(options.role?"Test Host":"Test Guest"))return false;unsigned delivered=0,received=0;
    for(auto& line:snapshot.lines){
+    if(line.system)continue;
     if(line.local){if(line.delivery==ChatDelivery::Delivered)delivered++;}
     else{
      unsigned remote=1-options.role;
@@ -30,16 +32,34 @@ int main(int argc,char** argv){
        ||line.text=="After the test: 100% ### from P"+std::to_string(remote+1);
      if(!expected)return false;received++;
     }
-   }return delivered==3&&received==3&&snapshot.lines.size()==6;
+   }return delivered==3&&received==3;
   };
   auto update=[&](const ProbeProgress& progress){
-   if(!chat)return;
-   if(chat->snapshot().connected&&!early){early=true;chat->send_text("Hello from P"+std::to_string(options.role+1));chat->send_text(std::string(512,char('a'+options.role)));}
+   auto snapshot=chat->snapshot();
+   if(snapshot.connected){
+    if(!connectedAt)connectedAt=GetTickCount64();auto elapsed=GetTickCount64()-connectedAt;
+    if(!snapshot.ready.started){assert(!progress.frame);if(elapsed>=1000)gateHeld=true;}else started=true;
+    bool canChange=!snapshot.ready.pending&&!snapshot.ready.starting&&!snapshot.ready.started;
+    if(canChange&&options.role==0){
+     if(readyStage==0&&elapsed>=100&&chat->set_ready(true))readyStage=1;
+     else if(readyStage==1&&elapsed>=450&&chat->set_ready(false))readyStage=2;
+     else if(readyStage==2&&elapsed>=850&&chat->set_ready(true))readyStage=3;
+    }else if(canChange&&options.role==1&&readyStage==0&&elapsed>=1700&&snapshot.ready.peerVersion>=3&&chat->set_ready(true))readyStage=1;
+   }
+   if(chatTest&&snapshot.connected&&!early){early=true;chat->send_text("Hello from P"+std::to_string(options.role+1));chat->send_text(std::string(512,char('a'+options.role)));}
    if(progress.message=="Connection test passed. Player chat connected."&&!late){late=true;chat->send_text("After the test: 100% ### from P"+std::to_string(options.role+1));}
    if(late&&verifyChat()){if(!completeAt)completeAt=GetTickCount64();else if(GetTickCount64()-completeAt>1000)cancel=true;}
   };
   auto result=run_probe(options,cancel,update,chat);
-  if(chatTest){bool good=late&&verifyChat();printf("CHAT %s: three messages each direction, including a 512-byte message and post-test chat.\n",good?"PASS":"FAIL");result.success&=good;}
+  unsigned hostReady=0,hostOff=0,guestReady=0,startNotices=0;
+  for(auto& line:chat->snapshot().lines)if(line.system){
+   hostReady+=line.text=="Test Host is ready.";hostOff+=line.text=="Test Host is not ready.";
+   guestReady+=line.text=="Test Guest is ready.";startNotices+=line.text=="Both players are ready. Starting the netplay test.";
+  }
+  bool readyGood=gateHeld&&started&&readyStage==(options.role?1u:3u)&&hostReady==2&&hostOff==1&&guestReady==1&&startNotices==1;
+  printf("READY %s: lobby held at frame zero, host unready/re-ready, both checks required and five unique status notices.\n",readyGood?"PASS":"FAIL");result.success&=readyGood;
+  if(chatTest){bool good=late&&verifyChat();printf("CHAT %s: three messages each direction, including a 512-byte message and post-test chat.\n",good?"PASS":"FAIL");
+   if(!good){printf("late=%d\n",late);for(auto& line:chat->snapshot().lines)if(!line.system)printf("local=%d delivery=%d bytes=%u\n",line.local,int(line.delivery),unsigned(line.text.size()));}result.success&=good;}
   printf("%s frames=%u rollbacks=%u ping=%.1f\n",result.message.c_str(),result.frame,result.rollbacks,result.ping);return result.success?0:1;
  }
  Token token;assert(token_from_text("0123456789abcdef0123456789abcdef",token));

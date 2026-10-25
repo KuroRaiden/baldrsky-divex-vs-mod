@@ -278,6 +278,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #endif
         }
         ImGui::EndDisabled();
+#ifdef VS_ONLINE
+        if(online_mode&&ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))ImGui::SetTooltip("Online battles are in development. Connect and check Ready for the netplay test. Uncheck Online setup for local VS.");
+#endif
         ImGui::SameLine(420*main_scale);
         if(ImGui::Button("CLOSE GAME",ImVec2(160*main_scale,40*main_scale)))
 #ifdef VS_NATIVE_START
@@ -293,8 +296,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
           302
 #endif
           *main_scale));
-        ImGui::PushTextWrapPos(io.DisplaySize.x-30*main_scale);
-        ImGui::TextUnformatted(startup.valid()?"Starting game and preparing VS...":status.c_str());ImGui::PopTextWrapPos();
+        ImGui::PushTextWrapPos(setupWidth-30*main_scale);
+        const char* setupStatus=status.c_str();
+#ifdef VS_ONLINE
+        if(!battle&&!startup.valid()){
+         if(online_mode)setupStatus="Online preview: connect, chat and check Ready. Start Battle is unavailable until native online battles are implemented.";
+         else if(GetFileAttributesW((directory+L"BaldrSky.VSNative.exe").c_str())==INVALID_FILE_ATTRIBUTES||GetFileAttributesW((directory+L"BaldrVSPlugin.dll").c_str())==INVALID_FILE_ATTRIBUTES)
+          setupStatus="Local VS needs BaldrSky.VSNative.exe and BaldrVSPlugin.dll beside this launcher. Copy the matching pair from your working PC or install the native VS build.";
+        }
+#endif
+        ImGui::TextUnformatted(startup.valid()?"Starting game and preparing VS...":setupStatus);ImGui::PopTextWrapPos();
 #ifdef VS_NATIVE_START
         if(equipment_catalog.empty()
 #ifdef VS_ONLINE

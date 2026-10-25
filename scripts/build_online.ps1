@@ -54,6 +54,8 @@ Copy-Item -LiteralPath (Join-Path $ImGuiPath 'LICENSE.txt') -Destination (Join-P
 if($LASTEXITCODE){throw 'Online tests failed'}
 & (Join-Path $out 'test_online_chat.exe')
 if($LASTEXITCODE){throw 'Online chat tests failed'}
+& (Join-Path $out 'test_online_ready.exe')
+if($LASTEXITCODE){throw 'Online ready-check tests failed'}
 
 $catalogInfo=[Diagnostics.ProcessStartInfo]::new((Join-Path $out 'BaldrVSLauncherOnline.exe'),'--verify-catalogs')
 $catalogInfo.UseShellExecute=$false;$catalogInfo.CreateNoWindow=$true

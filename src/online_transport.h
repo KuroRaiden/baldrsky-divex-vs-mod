@@ -85,6 +85,9 @@ public:
    }
    if(!ready())continue;lastReceive_=now;
    if(packet.kind==Kind::Bye){left_=true;continue;}
+   if(packet.kind==Kind::Ready||packet.kind==Kind::ReadyAck||packet.kind==Kind::Start||packet.kind==Kind::StartAck){
+    if(chat_){auto reply=chat_->receive_lobby(packet.kind,packet.data,packet.size);if(reply)send(reply->kind,reply->bytes.data(),reply->bytes.size());}continue;
+   }
    if(packet.kind==Kind::Chat){
     if(chat_){auto id=chat_->receive(packet.data,packet.size);if(id){std::vector<uint8_t> ack;put32(ack,id);send(Kind::ChatAck,ack.data(),ack.size());}}continue;
    }
@@ -97,7 +100,11 @@ public:
    memcpy(result->addr.data,&peer_,sizeof(peer_));memcpy(result->data,packet.data,packet.size);
    result->addr.size=sizeof(peer_);result->data_len=unsigned(packet.size);received_.push_back(result);
   }
-  if(chat_){chat_->connected(ready()&&!disconnected()&&error_.empty());auto data=chat_->next_packet(now);if(!data.empty())send(Kind::Chat,data.data(),data.size());}
+  if(chat_){
+   chat_->connected(ready()&&!disconnected()&&error_.empty());
+   auto control=chat_->next_lobby_packet(now);if(control)send(control->kind,control->bytes.data(),control->bytes.size());
+   auto data=chat_->next_packet(now);if(!data.empty())send(Kind::Chat,data.data(),data.size());
+  }
  }
  bool hasResult=false;uint32_t remoteFrame=0,remoteChecksum=0;
  void discard_results(){release_results();}

@@ -1,5 +1,6 @@
 #pragma once
 #include "online_protocol.h"
+#include "online_ready.h"
 #include <deque>
 #include <mutex>
 #include <memory>
@@ -25,21 +26,38 @@ inline bool valid_chat_text(const std::string& text){
  }return visible;
 }
 enum class ChatDelivery {Pending,Delivered,Failed};
-struct ChatLine {uint32_t id;unsigned player;bool local;std::string text;ChatDelivery delivery;};
-struct ChatSnapshot {bool connected=false;unsigned player=0;uint64_t revision=0;std::vector<ChatLine> lines;std::string localName,peerName;};
+struct ChatLine {uint32_t id;unsigned player;bool local;std::string text;ChatDelivery delivery;bool system=false;};
+struct ChatSnapshot {bool connected=false;unsigned player=0;uint64_t revision=0;std::vector<ChatLine> lines;std::string localName,peerName;ReadySnapshot ready;};
 class ChatMailbox {
  struct Pending {uint32_t id;std::string text;uint64_t sent=0;bool attempted=false;};
  mutable std::mutex mutex_;bool connected_=false;unsigned player_;uint32_t next_=1,expected_=1;
  uint64_t revision_=0;std::deque<Pending> outgoing_;std::deque<ChatLine> history_;
  std::string localName_,peerName_;
+ ReadyCheck ready_;uint32_t nextSystem_=1;
  void trim(){while(history_.size()>chat_history_limit)history_.pop_front();}
+ void system_line(unsigned player,const std::string& text){history_.push_back({nextSystem_++,player,player==player_,text,ChatDelivery::Delivered,true});trim();revision_++;}
 public:
- explicit ChatMailbox(unsigned player=0,std::string name="Player"):player_(player),localName_(std::move(name)){}
+ explicit ChatMailbox(unsigned player=0,std::string name="Player"):player_(player),localName_(std::move(name)),ready_(player){}
  void peer_name(const std::string& name){std::lock_guard<std::mutex> lock(mutex_);if(peerName_!=name){peerName_=name;revision_++;}}
  void connected(bool connected){
   std::lock_guard<std::mutex> lock(mutex_);if(connected_==connected)return;
-  connected_=connected;revision_++;
+  connected_=connected;ready_.connected(connected);revision_++;
   if(!connected){for(auto& line:history_)if(line.local&&line.delivery==ChatDelivery::Pending)line.delivery=ChatDelivery::Failed;outgoing_.clear();}
+ }
+ bool set_ready(bool value){
+  std::lock_guard<std::mutex> lock(mutex_);if(!ready_.set_ready(value))return false;
+  system_line(player_,localName_+(value?" is ready.":" is not ready."));return true;
+ }
+ std::optional<ControlPacket> receive_lobby(Kind kind,const uint8_t* data,size_t size){
+  std::lock_guard<std::mutex> lock(mutex_);auto before=ready_.snapshot();auto version=ready_.revision();
+  auto reply=ready_.receive(kind,data,size);auto after=ready_.snapshot();
+  if(after.peerVersion!=before.peerVersion)system_line(1-player_,peerName_+(after.peerReady?" is ready.":" is not ready."));
+  if(!before.started&&after.started)system_line(player_,"Both players are ready. Starting the netplay test.");
+  if(version!=ready_.revision())revision_++;return reply;
+ }
+ std::optional<ControlPacket> next_lobby_packet(uint64_t now){
+  std::lock_guard<std::mutex> lock(mutex_);auto version=ready_.revision();auto packet=ready_.next_packet(now);
+  if(version!=ready_.revision())revision_++;return packet;
  }
  bool send_text(const std::string& text){
   if(!valid_chat_text(text))return false;
@@ -63,10 +81,10 @@ public:
  void acknowledge(const uint8_t* data,size_t size){
   if(!data||size!=4)return;uint32_t id=get32(data);std::lock_guard<std::mutex> lock(mutex_);
   if(outgoing_.empty()||outgoing_.front().id!=id||!outgoing_.front().attempted)return;
-  outgoing_.pop_front();for(auto& line:history_)if(line.local&&line.id==id){line.delivery=ChatDelivery::Delivered;break;}revision_++;
+  outgoing_.pop_front();for(auto& line:history_)if(!line.system&&line.local&&line.id==id){line.delivery=ChatDelivery::Delivered;break;}revision_++;
  }
  ChatSnapshot snapshot()const{
-  std::lock_guard<std::mutex> lock(mutex_);return {connected_,player_,revision_,{history_.begin(),history_.end()},localName_,peerName_};
+  std::lock_guard<std::mutex> lock(mutex_);return {connected_,player_,revision_,{history_.begin(),history_.end()},localName_,peerName_,ready_.snapshot()};
  }
 };
 }

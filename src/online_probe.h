@@ -37,6 +37,7 @@ inline bool initialize_punch(const std::wstring& path,std::string& error){
 inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& cancel,const std::function<void(const ProbeProgress&)>& update={},std::shared_ptr<ChatMailbox> chat={}){
  ProbeProgress result;auto publish=[&](const std::string& s){result.message=s;if(update)update(result);};
  if(options.punch&&!initialize_punch(options.punchPath,result.message)){result.done=true;return result;}
+ if(!chat)chat=std::make_shared<ChatMailbox>(options.role,options.playerName);
  Transport transport;transport.chat(chat);
  if(!transport.open(options.role,options.port,options.peer,options.token,options.match,options.playerName)){result.message=transport.error();result.done=true;return result;}
  publish(options.role?"Connecting to host...":"Hosting: waiting for the peer...");
@@ -45,6 +46,13 @@ inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& can
   transport.poll();transport.discard_results();if(!transport.error().empty()){result.message=transport.error();result.done=true;return result;}Sleep(2);
  }
  if(cancel||!transport.ready()){result.message=cancel?"Connection cancelled.":"No matching peer replied. Check address, port and room key.";result.done=true;return result;}
+ publish("Connected. Both players must check Ready to start the netplay test.");
+ while(!cancel&&!transport.disconnected()&&transport.error().empty()&&!chat->snapshot().ready.started){
+  transport.poll();transport.discard_results();if(update)update(result);Sleep(20);
+ }
+ if(cancel||transport.disconnected()||!transport.error().empty()){
+  result.done=true;publish(cancel?"Disconnected before start.":"The peer disconnected before both players were ready.");transport.send(Kind::Bye);return result;
+ }
  GekkoSession* session=nullptr;
  if(!gekko_create(&session,GekkoGameSession)){result.message="Could not create the GekkoNet session.";result.done=true;return result;}
  struct Cleanup{GekkoSession** s;~Cleanup(){gekko_destroy(s);}} cleanup{&session};
@@ -57,7 +65,7 @@ inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& can
  }
  gekko_set_local_delay(session,options.role,2);
  ProbeState state,checkpoint;state.rng=options.match.seed;unsigned nextFrame=0;bool failed=false,hasCheckpoint=false;
- publish("Peers matched. Running the rollback connection test...");begin=GetTickCount64();
+ publish("Both players ready. Running the rollback connection test...");begin=GetTickCount64();
  auto nextTick=std::chrono::steady_clock::now();
  while(!cancel&&nextFrame<options.frames+16&&GetTickCount64()-begin<35000){
   auto input=nextFrame+2<options.frames?probe_input(options.role,nextFrame):Input{};gekko_add_local_input(session,options.role,&input);

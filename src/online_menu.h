@@ -33,7 +33,7 @@ static std::future<std::string> online_code_task;
 static char online_link[97]={};
 static void online_panel(float scale){
  load_online_name();
- ImGui::SetCursorPos(ImVec2(42*scale,435*scale));
+ ImGui::SetCursorPos(ImVec2(42*scale,(std::max)(435*scale,ImGui::GetCursorPosY()+8*scale)));
  ImGui::SeparatorText("ONLINE VS - DEVELOPMENT");
  ImGui::BeginDisabled(online_task.valid()||online_code_task.valid());ImGui::Checkbox("Online setup",&online_mode);ImGui::EndDisabled();
  if(!online_mode)return;
@@ -102,11 +102,20 @@ static void online_chat_panel(float scale,float left,float width){
  if(room.lock()!=online_chat){room=online_chat;seen=0;text[0]=0;notice.clear();focus=false;}
  if(snapshot.connected)ImGui::TextWrapped("Connected to %s (P%u)",snapshot.peerName.c_str(),2-snapshot.player);
  else ImGui::TextUnformatted("Not connected");
+ bool ready=snapshot.ready.localReady;
+ ImGui::BeginDisabled(!snapshot.connected||snapshot.ready.pending||snapshot.ready.starting||snapshot.ready.started);
+ if(ImGui::Checkbox("Ready (you)",&ready))online_chat->set_ready(ready);ImGui::EndDisabled();
+ bool peerReady=snapshot.ready.peerReady;ImGui::BeginDisabled();ImGui::Checkbox("Peer ready",&peerReady);ImGui::EndDisabled();
+ if(snapshot.ready.started)ImGui::TextWrapped("Netplay test started.");
+ else if(snapshot.ready.starting)ImGui::TextWrapped("Both ready. Confirming start...");
+ else if(snapshot.ready.pending)ImGui::TextWrapped("Sending ready status...");
+ else ImGui::TextWrapped("Both players must check Ready to start the netplay test.");
  bool changed=snapshot.revision!=seen;seen=snapshot.revision;
  ImGui::BeginChild("##chat-history",ImVec2(0,ImGui::GetContentRegionAvail().y-100*scale),ImGuiChildFlags_Borders);
  bool nearBottom=ImGui::GetScrollY()>=ImGui::GetScrollMaxY()-10*scale;
  if(snapshot.lines.empty())ImGui::TextWrapped("Connect with a link code to chat with the other player.");
  for(auto& line:snapshot.lines){
+  if(line.system){ImGui::PushTextWrapPos(0);ImGui::TextColored(ImVec4(.3f,.35f,.4f,1),"%s",line.text.c_str());ImGui::PopTextWrapPos();ImGui::Spacing();continue;}
   ImGui::PushID(int(line.id));ImGui::PushID(line.local?1:0);
   const char* delivery=line.delivery==online::ChatDelivery::Pending?" - sending...":line.delivery==online::ChatDelivery::Failed?" - not delivered":"";
   const std::string& name=line.local?snapshot.localName:snapshot.peerName;
