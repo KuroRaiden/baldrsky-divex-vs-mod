@@ -2,6 +2,10 @@
 
 Private collaboration workspace for KuroRaiden and armonte. Goal: two human players using two controllers, based on **Survival → Training**.
 
+## Online VS development
+
+The separate `online-vs` branch is building a two-player online launcher with AutoPunch, GekkoNet and shareable link codes. Its current build tests connections and rollback with a standalone simulation; **native online combat is not ready**. The game's built-in replay is the determinism baseline, with two identical 600-frame native audit runs so far. See [online implementation, replay findings and testing](docs/VS-online.md). The public latest release remains the local VS build.
+
 ## Compatibility
 
 This mod and launcher target the original **BALDR SKY DiveX version 1.00** executable. Compatibility with later game patches is **not guaranteed**. The build and installer require the exact supported executable hashes; other versions may be rejected or behave incorrectly.

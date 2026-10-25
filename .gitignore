@@ -33,3 +33,7 @@ BaldrVS-status.bin
 equipment-runtime-test.txt
 
 split-runtime-test.txt
+
+online-build/
+online-test-*.txt
+online-native-replay-audit.csv

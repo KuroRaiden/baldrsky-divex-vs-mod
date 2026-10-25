@@ -1,3 +1,6 @@
+#ifdef VS_ONLINE
+#include "online_transport.h"
+#endif
 // Dear ImGui: standalone example application for Windows API + DirectX 11
 
 // Learn about Dear ImGui:
@@ -19,6 +22,9 @@
 #include <future>
 #ifdef VS_NATIVE_START
 #include "equipment_menu.h"
+#ifdef VS_ONLINE
+#include "online_menu.h"
+#endif
 #endif
 
 // Data
@@ -68,13 +74,17 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #endif
     ::RegisterClassExW(&wc);
     const wchar_t* windowTitle=
-#ifdef VS_NATIVE_START
+#ifdef VS_ONLINE
+        L"BALDR SKY DiveX - Online VS Development";
+#elif defined(VS_NATIVE_START)
         L"BALDR SKY DiveX - Native VS Launcher";
 #else
         L"BALDR SKY DiveX - VS Launcher";
 #endif
     const int windowHeight=
-#ifdef VS_NATIVE_START
+#ifdef VS_ONLINE
+        820;
+#elif defined(VS_NATIVE_START)
         490;
 #else
         380;
@@ -226,7 +236,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #else
         ImGui::SetCursorPos(ImVec2(240*main_scale,240*main_scale));
 #endif
-        ImGui::BeginDisabled(startup.valid() || battle || mechas.empty() || stages.empty());
+        ImGui::BeginDisabled(startup.valid() || battle || mechas.empty() || stages.empty()
+#ifdef VS_ONLINE
+            || (online_mode && !online::native_rollback_verified)
+#endif
+        );
         if(ImGui::Button("START BATTLE",ImVec2(160*main_scale,40*main_scale))){
             unsigned first=mechas[p1].id,second=mechas[p2].id,map=stages[stage].id;
 #ifdef VS_NATIVE_START
@@ -265,6 +279,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
          }ImGui::EndDisabled();
         }
         equipment_editor(main_scale);
+#ifdef VS_ONLINE
+        if(!mechas.empty()&&!stages.empty()&&!music.empty())online_panel(main_scale,mechas[p1].id,mechas[p2].id,stages[stage].id,targets[preset],music[track].id);
+#endif
 #endif
         ImGui::End();
         // Rendering
@@ -280,6 +297,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         g_SwapChainOccluded = (hr == DXGI_STATUS_OCCLUDED);
     }
 
+#ifdef VS_ONLINE
+    online_cancel=true;if(online_code_task.valid())online_code_task.get();if(online_task.valid())online_task.get();
+#endif
     // Cleanup
     ImGui_ImplDX11_Shutdown();
     ImGui_ImplWin32_Shutdown();

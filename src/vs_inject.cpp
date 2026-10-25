@@ -31,6 +31,9 @@ static void publish_native_status(){
  if(file!=INVALID_HANDLE_VALUE){DWORD count=0;WriteFile(file,(const void*)launcher_config,sizeof(launcher_config),&count,nullptr);CloseHandle(file);}
 }
 #include "vs_native_rounds.h"
+#ifdef ONLINE_NATIVE_REPLAY_AUDIT
+#include "native_replay_audit.h"
+#endif
 #ifdef VS_NATIVE_EQUIPMENT_AUTOTEST
 #include "test_equipment_runtime.h"
 #endif
@@ -119,6 +122,9 @@ static int __stdcall launcher_input(u32 manager) {
   return 0;
  }
  int result=((Input)0x79A550)(manager);
+#ifdef ONLINE_NATIVE_REPLAY_AUDIT
+ native_replay_audit();
+#endif
 #ifdef VS_NATIVE_EQUIPMENT_AUTOTEST
  equipment_runtime_test();
 #endif
@@ -154,6 +160,9 @@ extern "C" __declspec(dllexport) DWORD WINAPI InitializeVS(void* settings) {
  if(U(0xAE3E14))return 0;
 #ifdef VS_SPLIT_SCREEN
  if(!split_hook_matches(0x787937,0x740150)||!split_hook_matches(0x740E8F,0x73F6A0))return 0;
+#endif
+#ifdef ONLINE_NATIVE_REPLAY_AUDIT
+ if(!install_replay_audit())return 0;
 #endif
  for(unsigned i=0;i<8;i++)launcher_config[i]=((u32*)settings)[i];
  AddVectoredExceptionHandler(1,startup_exception);
