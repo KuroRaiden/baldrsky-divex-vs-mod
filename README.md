@@ -4,7 +4,7 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 
 ## Online VS development
 
-The separate `online-vs` branch is building a two-player online launcher with AutoPunch, GekkoNet, shareable link codes, saved player names, a both-player Ready check and ImGui chat. [Download the connection/chat preview](https://github.com/KuroRaiden/baldrsky-divex-vs-mod/raw/refs/heads/online-vs/downloads/BaldrVS-Online-Chat-Test.zip) on both PCs, extract the entire ZIP and run `BaldrVSLauncherOnline.exe`. The preview embeds its roster lists and connects without game files. It tests connections and rollback with a standalone simulation; **native online combat is not ready**. The game's built-in replay is the determinism baseline, with two identical 600-frame native audit runs so far. See [online setup, replay findings and testing](docs/VS-online.md). The public latest release remains the local VS build.
+The separate `online-vs` branch is building a two-player online launcher with AutoPunch, GekkoNet, shareable link codes, saved player names, a both-player Ready check and ImGui chat. **The online binary download is paused after a cloud-PC Microsoft Defender detection.** See the [investigation and package hashes](docs/VS-antivirus-review.md); a false positive has not been confirmed. The preview embeds its roster lists and connects without game files. It tests connections and rollback with a standalone simulation; **native online combat is not ready**. The game's built-in replay is the determinism baseline, with two identical 600-frame native audit runs so far. See [online setup, replay findings and testing](docs/VS-online.md). The public latest release remains the local VS build.
 
 ## Compatibility
 

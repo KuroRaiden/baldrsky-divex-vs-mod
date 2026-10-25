@@ -14,7 +14,7 @@ The connection test uses real UDP and the actual GekkoNet session API, with an e
 
 ## Cloud PC setup and player names
 
-Download the [online connection/chat preview](https://github.com/KuroRaiden/baldrsky-divex-vs-mod/raw/refs/heads/online-vs/downloads/BaldrVS-Online-Chat-Test.zip) on **both computers**. Close any older online launcher, extract the entire ZIP into a writable folder and run `BaldrVSLauncherOnline.exe` from that folder. The cloud computer does not automatically receive local workspace files. This package is a development preview on the `online-vs` branch; it does not replace the public stable local-VS release.
+**Online preview downloads are paused following a Microsoft Defender report on the cloud PC.** See the [investigation and exact hashes](VS-antivirus-review.md). The setup notes below describe the reported build; use should remain on hold pending review. Close any older online launcher, extract the entire ZIP into a writable folder and run `BaldrVSLauncherOnline.exe` from that folder. The cloud computer does not automatically receive local workspace files. This package is a development preview on the `online-vs` branch; it does not replace the public stable local-VS release.
 
 The online EXE embeds the 99 mecha names, 220 stage names and 92 music names, with TSV copies also included in the ZIP. Online controls appear even if external catalogs are absent. This fixes the earlier cloud-PC startup that showed only "Roster unavailable" and hid the connection controls. No original game executable, assets or equipment-description catalog is distributed in this preview. Local game startup still requires a separately installed compatible native build; native online battles remain disabled.
 
@@ -27,6 +27,12 @@ One player selects Create link code / Host and shares the code; the other enters
 Connecting opens a lobby with chat. The synchronization test stays at frame zero until **both players check Ready (you)** in their own chat pane. A read-only **Peer ready** check shows the other player's state. Players can uncheck before start; the control briefly locks while a ready change is being acknowledged and locks once startup is committed. Each accepted change posts a named system message, such as "Kou is ready." or "Kou is not ready.", in both chat histories. Both peers also receive one start notice. Readiness clears on disconnect and every new connection.
 
 Ready changes use a separate sequenced control channel with acknowledgements and 250 ms retries, so a full chat queue cannot block the ready gate. The host proposes start for the exact two current ready revisions; the guest validates that pair and acknowledges it. A delayed proposal cannot start a lobby after the guest unchecks. Lost start acknowledgements are retried without duplicate notices. Lobby control packets pass the same room/role/endpoint checks as chat. Both-ready starts the current standalone netplay test; it does not enable the unfinished native battle bridge.
+
+## Planned native controller routing and mecha selection
+
+Each PC will capture its own locally configured **1P controller bindings**. Host input maps to match P1; the joining player's local 1P input maps to match P2. A guest does not need a second controller or local 2P bindings. Capture and routing belong at the native combat-input boundary, preserving held buttons and pressed-edge history. Launcher navigation remains mouse/keyboard only. The current standalone test does not capture real controller input; this routing is a requirement for the native bridge, not an implemented gameplay feature.
+
+Each player will own their mecha and equipment selection. The host controls P1's selection, the guest controls P2's, and the host selects the shared stage, set rules and seed. Both launchers show the agreed choices on the same roster. A selection change invalidates both Ready checks. The future native handshake must validate the actual game/plugin and move catalog, exchange canonical mecha/move IDs and explicit loadouts, and bind the start agreement to that exact selection revision. The current fixed probe manifest cannot be used to start a native battle. This selection exchange is planned, not present in the connection-test build.
 
 ## Starting local VS on a second PC
 

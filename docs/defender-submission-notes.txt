@@ -1,0 +1,41 @@
+Product: BALDR SKY DiveX Online VS connection/chat development preview
+Source commit: bd50419 (online-vs branch)
+Source: https://github.com/KuroRaiden/baldrsky-divex-vs-mod/tree/bd50419
+Report date: October 25, 2026
+Reported detection: Trojan:Script/Wacatac.B!ml
+Affected environment: user's Shadow Windows PC
+Affected item reported by the user: entire BaldrVS-Online-Chat-Test (1).zip
+Exact component responsible: not identified
+
+Archive SHA256:
+974DEEEC36FE12EB6900FFDD3BBA45AC0C06981BFC72BDB0F698B03D3A46ED00
+Launcher SHA256:
+C7C1B29DE440CEB950B3F78B6E89E23B4E706CCE64DCBFB5BB4EFDBF43150A8C
+AutoPunch helper SHA256:
+EE88E2CB332ABF3B2DE38DDB8A77030FEF4C22A283F6ADED5A1A1CBB1977E462
+
+Please investigate the classification. A false positive is suspected but has
+not been confirmed. We have paused distribution of the current online ZIP.
+
+The unsigned Win32 launcher uses Dear ImGui and GekkoNet for a two-peer
+deterministic networking test, link-code invitations, player names, chat and
+a ready check. Native online gameplay is not enabled. Its local-game path
+uses ordinary CreateProcessW and a separately installed native game/plugin
+pair. Close Game terminates only the child launched by the launcher.
+
+The helper builds a pinned adaptation of AutoPunch and Microsoft Detours.
+It starts explicitly outside DllMain, intercepts Winsock functions in its
+own process for NAT traversal and remains loaded for that process lifetime.
+The upstream remote-process injector, updater and loader UI are not built.
+
+The archive contains no game executable/assets, personal profiles, saves or
+chat logs. All members match the package's SHA256 manifest. Dependencies:
+AutoPunch db0b962a8bed74179997e755e851f99e885a10d1
+GekkoNet 9da2363d7c5a68cc77f8dfe2da7cf51d3afe3bee
+Detours 64ec135a509884aa60ac6c19b59564f1da9cb2fa
+
+Development-PC Microsoft Defender custom scans of isolated copies of the
+ZIP, launcher and helper reported no threats with intelligence 1.461.192.0.
+The exclusion-status check was access denied. This result does not disprove
+the cloud-PC detection. Protection stayed enabled and no files were restored
+from quarantine. No Microsoft submission or review result exists yet.
