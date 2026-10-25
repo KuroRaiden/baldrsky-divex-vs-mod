@@ -54,3 +54,11 @@ Copy-Item -LiteralPath (Join-Path $ImGuiPath 'LICENSE.txt') -Destination (Join-P
 if($LASTEXITCODE){throw 'Online tests failed'}
 & (Join-Path $out 'test_online_chat.exe')
 if($LASTEXITCODE){throw 'Online chat tests failed'}
+
+$catalogInfo=[Diagnostics.ProcessStartInfo]::new((Join-Path $out 'BaldrVSLauncherOnline.exe'),'--verify-catalogs')
+$catalogInfo.UseShellExecute=$false;$catalogInfo.CreateNoWindow=$true
+$catalogTest=[Diagnostics.Process]::Start($catalogInfo)
+if(!$catalogTest.WaitForExit(10000)){Stop-Process -InputObject $catalogTest -Force;throw 'Embedded catalog test timed out'}
+if($catalogTest.ExitCode -ne 0){throw 'Embedded roster/stage/music resource test failed'}
+$catalogTest.Dispose()
+'PASS: embedded 99-mecha, 220-stage and 92-track catalogs; no external catalog required.'

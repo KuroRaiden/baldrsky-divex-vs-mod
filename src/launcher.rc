@@ -1,1 +1,7 @@
 101 ICON "Kou.ico"
+
+#ifdef VS_ONLINE
+201 RCDATA "mechas.tsv"
+202 RCDATA "stages.tsv"
+203 RCDATA "music.tsv"
+#endif

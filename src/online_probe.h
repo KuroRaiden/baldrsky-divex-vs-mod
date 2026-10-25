@@ -22,7 +22,7 @@ struct ProbeState {
 };
 inline Input probe_input(unsigned role,unsigned frame){return {((frame/17+role)%2?1u:2u)|((frame+role*7)%13==0?0x100u:0u)};}
 struct ProbeProgress {std::string message="Idle";unsigned frame=0,rollbacks=0;float ping=0;bool success=false,done=false;};
-struct ProbeOptions {unsigned role=0,port=14764,frames=600;std::string peer;Token token={};Manifest match;bool punch=false;std::wstring punchPath;bool keepChat=false;};
+struct ProbeOptions {unsigned role=0,port=14764,frames=600;std::string peer;Token token={};Manifest match=connection_test_manifest();bool punch=false;std::wstring punchPath;bool keepChat=false;std::string playerName="Player";};
 inline std::atomic_bool punch_active=false;
 inline bool initialize_punch(const std::wstring& path,std::string& error){
  // Our build keeps DllMain inert and starts AutoPunch explicitly, outside the
@@ -38,7 +38,7 @@ inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& can
  ProbeProgress result;auto publish=[&](const std::string& s){result.message=s;if(update)update(result);};
  if(options.punch&&!initialize_punch(options.punchPath,result.message)){result.done=true;return result;}
  Transport transport;transport.chat(chat);
- if(!transport.open(options.role,options.port,options.peer,options.token,options.match)){result.message=transport.error();result.done=true;return result;}
+ if(!transport.open(options.role,options.port,options.peer,options.token,options.match,options.playerName)){result.message=transport.error();result.done=true;return result;}
  publish(options.role?"Connecting to host...":"Hosting: waiting for the peer...");
  uint64_t begin=GetTickCount64();
  while(!cancel&&!transport.ready()&&((options.keepChat&&options.role==0)||GetTickCount64()-begin<30000)){

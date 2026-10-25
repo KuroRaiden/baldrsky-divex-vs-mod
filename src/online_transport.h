@@ -9,6 +9,7 @@
 #include <functional>
 #include "online_protocol.h"
 #include "online_chat.h"
+#include "online_identity.h"
 #include <gekkonet.h>
 
 namespace online {
@@ -29,6 +30,8 @@ class Transport {
  uint64_t lastHello_=0,lastReceive_=0;std::vector<GekkoNetResult*> received_;
  std::string error_;bool left_=false,libraryOwnsResults_=false;
  std::shared_ptr<ChatMailbox> chat_;
+ std::string localName_,peerName_;
+ std::vector<uint8_t> hello()const{auto bytes=manifest_;bytes.insert(bytes.end(),localName_.begin(),localName_.end());return bytes;}
  inline static thread_local Transport* active_=nullptr;
  GekkoNetAdapter adapter_={send_callback,receive_callback,free_callback};
  static void send_callback(GekkoNetAddress*,const char* data,int length){if(active_&&length>0)active_->send(Kind::Data,(const uint8_t*)data,size_t(length));}
@@ -40,9 +43,10 @@ class Transport {
 public:
  Transport()=default;Transport(const Transport&)=delete;Transport& operator=(const Transport&)=delete;
  ~Transport(){close();}
- bool open(unsigned role,unsigned port,const std::string& peer,const Token& token,const Manifest& manifest){
+ bool open(unsigned role,unsigned port,const std::string& peer,const Token& token,const Manifest& manifest,const std::string& name="Player"){
   close();error_.clear();left_=false;hello_=ack_=false;lastHello_=0;
-  if(role>1||port>65535||!port||!manifest.valid()){error_="Invalid online settings or unresolved equipment.";return false;}
+  if(role>1||port>65535||!port||!manifest.valid()||!valid_player_name(name)){error_="Invalid online settings or player name.";return false;}
+  localName_=name;peerName_.clear();hasResult=false;remoteFrame=remoteChecksum=0;
   if(role==1&&!parse_address(peer,peer_)){error_="Enter an IPv4 address and port, such as 127.0.0.1:14764.";return false;}
   pinned_=role==1;role_=role;token_=token;manifest_=manifest.bytes();
   WSADATA ws={};if(WSAStartup(MAKEWORD(2,2),&ws)){error_="Windows networking could not start.";return false;}wsa_=true;
@@ -63,16 +67,20 @@ public:
   // Control-only polls call discard_results() below before polling again.
   release_results();
   uint64_t now=GetTickCount64();
-  if(!lastHello_||now-lastHello_>=250){send(Kind::Hello,manifest_.data(),manifest_.size());lastHello_=now;}
+  if(!lastHello_||now-lastHello_>=250){auto data=hello();send(Kind::Hello,data.data(),data.size());lastHello_=now;}
   for(unsigned i=0;i<64;i++){
    uint8_t bytes[header_size+max_payload+1];sockaddr_in from={};int length=sizeof(from);
    int n=recvfrom(socket_,(char*)bytes,sizeof(bytes),0,(sockaddr*)&from,&length);
    if(n==SOCKET_ERROR){int e=WSAGetLastError();if(e==WSAEWOULDBLOCK)break;if(e==WSAEMSGSIZE||e==WSAECONNRESET)continue;error_="UDP receive failed.";break;}
    Packet packet={};if(!decode(bytes,size_t(n),token_,packet)||packet.role==role_||(pinned_&&!same_address(from,peer_)))continue;
    if(packet.kind==Kind::Hello||packet.kind==Kind::Ack){
-    if(packet.size!=manifest_.size()||memcmp(packet.data,manifest_.data(),manifest_.size())){error_="Peer build, match settings or equipment differ.";continue;}
+    if(packet.size<=manifest_.size()||packet.size>manifest_.size()+name_max_bytes||memcmp(packet.data,manifest_.data(),manifest_.size())){error_="Peer connection-test build differs.";continue;}
+    std::string name((const char*)packet.data+manifest_.size(),packet.size-manifest_.size());
+    if(!valid_player_name(name)){error_="The peer sent an invalid player name.";continue;}
+    if(!peerName_.empty()&&name!=peerName_){error_="The peer identity changed during this connection.";continue;}
+    peerName_=name;if(chat_)chat_->peer_name(name);
     if(!pinned_){peer_=from;pinned_=true;}lastReceive_=now;
-    if(packet.kind==Kind::Hello){hello_=true;send(Kind::Ack,manifest_.data(),manifest_.size());}
+    if(packet.kind==Kind::Hello){hello_=true;auto data=hello();send(Kind::Ack,data.data(),data.size());}
     else ack_=true;continue;
    }
    if(!ready())continue;lastReceive_=now;
@@ -96,6 +104,7 @@ public:
  bool ready()const{return hello_&&ack_;}
  bool disconnected()const{return left_||GetTickCount64()-lastReceive_>10000;}
  const std::string& error()const{return error_;}
+ const std::string& peer_name()const{return peerName_;}
  GekkoNetAddress peer_address(){return {(void*)&peer_,sizeof(peer_)};}
  GekkoNetAdapter* adapter(){active_=this;return &adapter_;}
  void report(uint32_t frame,uint32_t checksum){std::vector<uint8_t> b;put32(b,frame);put32(b,checksum);send(Kind::Result,b.data(),b.size());}

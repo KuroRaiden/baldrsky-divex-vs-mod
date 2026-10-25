@@ -27,7 +27,7 @@ target_compile_options(test_online_chat PRIVATE /UNDEBUG)
 add_executable(BaldrVSLauncherOnline WIN32 "${ROOT}/src/vs_launcher_menu.cpp" "${ROOT}/src/launcher.rc"
  "${IMGUI_PATH}/imgui.cpp" "${IMGUI_PATH}/imgui_draw.cpp" "${IMGUI_PATH}/imgui_tables.cpp" "${IMGUI_PATH}/imgui_widgets.cpp"
  "${IMGUI_PATH}/backends/imgui_impl_win32.cpp" "${IMGUI_PATH}/backends/imgui_impl_dx11.cpp")
-target_include_directories(BaldrVSLauncherOnline PRIVATE "${IMGUI_PATH}" "${IMGUI_PATH}/backends" "${ROOT}/assets")
+target_include_directories(BaldrVSLauncherOnline PRIVATE "${IMGUI_PATH}" "${IMGUI_PATH}/backends" "${ROOT}/assets" "${ROOT}/data")
 target_compile_definitions(BaldrVSLauncherOnline PRIVATE VS_NATIVE_START VS_ONLINE WIN32_LEAN_AND_MEAN IMGUI_IMPL_WIN32_DISABLE_GAMEPAD)
 target_link_libraries(BaldrVSLauncherOnline PRIVATE GekkoNet d3d11 d3dcompiler user32 gdi32 dwmapi advapi32 ws2_32 winhttp)
 # Built explicitly for local engine research; never copied into a launcher build.

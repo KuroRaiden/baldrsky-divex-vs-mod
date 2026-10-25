@@ -26,14 +26,16 @@ inline bool valid_chat_text(const std::string& text){
 }
 enum class ChatDelivery {Pending,Delivered,Failed};
 struct ChatLine {uint32_t id;unsigned player;bool local;std::string text;ChatDelivery delivery;};
-struct ChatSnapshot {bool connected=false;unsigned player=0;uint64_t revision=0;std::vector<ChatLine> lines;};
+struct ChatSnapshot {bool connected=false;unsigned player=0;uint64_t revision=0;std::vector<ChatLine> lines;std::string localName,peerName;};
 class ChatMailbox {
  struct Pending {uint32_t id;std::string text;uint64_t sent=0;bool attempted=false;};
  mutable std::mutex mutex_;bool connected_=false;unsigned player_;uint32_t next_=1,expected_=1;
  uint64_t revision_=0;std::deque<Pending> outgoing_;std::deque<ChatLine> history_;
+ std::string localName_,peerName_;
  void trim(){while(history_.size()>chat_history_limit)history_.pop_front();}
 public:
- explicit ChatMailbox(unsigned player=0):player_(player){}
+ explicit ChatMailbox(unsigned player=0,std::string name="Player"):player_(player),localName_(std::move(name)){}
+ void peer_name(const std::string& name){std::lock_guard<std::mutex> lock(mutex_);if(peerName_!=name){peerName_=name;revision_++;}}
  void connected(bool connected){
   std::lock_guard<std::mutex> lock(mutex_);if(connected_==connected)return;
   connected_=connected;revision_++;
@@ -64,7 +66,7 @@ public:
   outgoing_.pop_front();for(auto& line:history_)if(line.local&&line.id==id){line.delivery=ChatDelivery::Delivered;break;}revision_++;
  }
  ChatSnapshot snapshot()const{
-  std::lock_guard<std::mutex> lock(mutex_);return {connected_,player_,revision_,{history_.begin(),history_.end()}};
+  std::lock_guard<std::mutex> lock(mutex_);return {connected_,player_,revision_,{history_.begin(),history_.end()},localName_,peerName_};
  }
 };
 }

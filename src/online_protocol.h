@@ -8,7 +8,7 @@
 #include "equipment_rules.h"
 
 namespace online {
-constexpr uint32_t wire_version=2, input_schema=1;
+constexpr uint32_t wire_version=3, input_schema=1;
 constexpr size_t max_payload=1152, header_size=28;
 using Token=std::array<uint8_t,16>;
 using Digest=std::array<uint8_t,32>;
@@ -60,4 +60,14 @@ inline bool valid_input(Input i){return !(i.held&~gameplay_buttons);}
 // Explicit prerequisite: the shipping game does not yet have a proven snapshot
 // and draw-free replay bridge. Connection success must never enable combat.
 constexpr bool native_rollback_verified=false;
+// The current probe does not simulate selected mechas/equipment. Keep its
+// handshake independent of optional game files so players can connect/chat
+// before the native game is installed. A future combat bridge needs its own
+// validated match agreement; switching that on must revisit this gate.
+inline Manifest connection_test_manifest(){
+ static_assert(!native_rollback_verified,"Implement native match agreement before enabling online combat");
+ Manifest m;for(auto& slots:m.equipment)slots.fill(equipment_empty);
+ constexpr char build[]="BALDR-CONNECTION-PROBE-v3";
+ memcpy(m.build.data(),build,sizeof(build)-1);return m;
+}
 }

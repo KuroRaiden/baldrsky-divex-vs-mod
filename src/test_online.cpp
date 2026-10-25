@@ -13,13 +13,14 @@ int main(int argc,char** argv){
   else if(!token_from_text(argv[4],options.token))return 2;
   bool chatTest=false;for(int i=5;i<argc;i++){
    if(!strcmp(argv[i],"--chat-test")){chatTest=true;options.keepChat=true;}
+   else if(!strcmp(argv[i],"--name")&&i+1<argc){options.playerName=argv[++i];}
    else{options.punch=true;std::string path=argv[i];options.punchPath.assign(path.begin(),path.end());}
   }
-  for(auto& slots:options.match.equipment)slots.fill(equipment_empty);
-  auto chat=chatTest?std::make_shared<ChatMailbox>(options.role):nullptr;
+  options.match=connection_test_manifest();
+  auto chat=chatTest?std::make_shared<ChatMailbox>(options.role,options.playerName):nullptr;
   std::atomic_bool cancel=false;bool early=false,late=false;uint64_t completeAt=0;
   auto verifyChat=[&](){
-   if(!chat)return false;auto snapshot=chat->snapshot();unsigned delivered=0,received=0;
+   if(!chat)return false;auto snapshot=chat->snapshot();if(snapshot.localName!=options.playerName||snapshot.peerName!=(options.role?"Test Host":"Test Guest"))return false;unsigned delivered=0,received=0;
    for(auto& line:snapshot.lines){
     if(line.local){if(line.delivery==ChatDelivery::Delivered)delivered++;}
     else{

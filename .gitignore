@@ -37,3 +37,6 @@ split-runtime-test.txt
 online-build/
 online-test-*.txt
 online-native-replay-audit.csv
+
+BaldrVS-player-name.txt
+BaldrVS-player-name.txt.tmp

@@ -1,9 +1,20 @@
 #include "online_chat.h"
+#include "online_identity.h"
+#include <sstream>
 #include <cassert>
 #include <cstdio>
 
 int main(){
  using namespace online;
+ assert(valid_player_name("KuroRaiden")&&valid_player_name("Two Words")&&valid_player_name(std::string(24,'a')));
+ assert(trim_name("  Player name ")=="Player name");
+ for(auto name:{"", " ", " padded", "padded ", "two\nlines", "bad\x7f"})assert(!valid_player_name(name));
+ assert(!valid_player_name(std::string(25,'a')));std::string japanese;for(unsigned i=0;i<24;i++)japanese+="\xe3\x81\x82";
+ assert(valid_player_name(japanese)&&!valid_player_name(japanese+"\xe3\x81\x82"));
+ std::stringstream saved;assert(write_player_name(saved,"Saved name"));std::string loaded;assert(read_player_name(saved,loaded)&&loaded=="Saved name");
+ std::stringstream badName("first\nsecond\n");assert(!read_player_name(badName,loaded));
+ auto probe=connection_test_manifest();assert(probe.valid());for(auto& slots:probe.equipment)for(auto id:slots)assert(id==equipment_empty);
+ ChatMailbox named(0,"My name");named.peer_name("Other name");assert(named.snapshot().localName=="My name"&&named.snapshot().peerName=="Other name");
  assert(valid_chat_text("Hello, 100% ###"));assert(valid_chat_text("\xe3\x81\x93\xe3\x82\x93\xe3\x81\xab\xe3\x81\xa1\xe3\x81\xaf"));
  assert(valid_chat_text("\xf0\x9f\x91\x8b"));assert(valid_chat_text(std::string(512,'x')));
  for(auto s:{""," ","line\nbreak","\t","\x7f","\x80","\xc0\x80","\xe0\x80\x80","\xed\xa0\x80","\xf4\x90\x80\x80","\xe3\x81"})assert(!valid_chat_text(s));

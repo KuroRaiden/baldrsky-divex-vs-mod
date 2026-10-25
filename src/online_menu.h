@@ -10,33 +10,29 @@ static std::mutex online_mutex;
 static online::ProbeProgress online_progress;
 static bool online_mode=true;
 static std::shared_ptr<online::ChatMailbox> online_chat=std::make_shared<online::ChatMailbox>();
-static online::Digest online_hash(const std::wstring& path){
- online::Digest digest={};HCRYPTPROV p=0;HCRYPTHASH h=0;
- if(!CryptAcquireContextW(&p,nullptr,nullptr,PROV_RSA_AES,CRYPT_VERIFYCONTEXT))return digest;
- if(CryptCreateHash(p,CALG_SHA_256,0,0,&h)){
-  std::ifstream f(path,std::ios::binary);char b[8192];bool good=f.good();
-  while(f){f.read(b,sizeof(b));if(f.gcount()&&!CryptHashData(h,(BYTE*)b,DWORD(f.gcount()),0)){good=false;break;}}
-  DWORD n=32;if(!good||f.bad()||!CryptGetHashParam(h,HP_HASHVAL,digest.data(),&n,0))digest={};CryptDestroyHash(h);
- }CryptReleaseContext(p,0);return digest;
+static char online_name[online::name_max_bytes+1]="Player";
+static bool online_name_loaded=false;
+static std::string online_name_notice;
+static void load_online_name(){
+ if(online_name_loaded)return;online_name_loaded=true;
+ std::ifstream input(directory+L"BaldrVS-player-name.txt",std::ios::binary);std::string name;
+ if(online::read_player_name(input,name))strcpy_s(online_name,name.c_str());
 }
-static online::Digest online_catalog_hash(){
- // Training defaults and translated labels are machine-local. Compatibility
- // depends on mecha/move IDs and slot types; explicit loadouts are matched too.
- std::vector<uint8_t> bytes;
- for(auto& entry:equipment_catalog){
-  online::put32(bytes,entry.first);std::vector<std::pair<unsigned,unsigned>> moves;
-  for(auto& move:entry.second.moves)moves.push_back({move.id,move.type});std::sort(moves.begin(),moves.end());
-  online::put32(bytes,unsigned(moves.size()));for(auto move:moves){online::put32(bytes,move.first);online::put32(bytes,move.second);}
+static bool save_online_name(){
+ std::string name=online::trim_name(online_name);
+ if(!online::valid_player_name(name)){online_name_notice="Enter a name of 1 to 24 characters.";return false;}
+ strcpy_s(online_name,name.c_str());
+ std::ofstream file(directory+L"BaldrVS-player-name.txt.tmp",std::ios::binary);
+ bool good=online::write_player_name(file,name);file.close();
+ if(!good||!file||!MoveFileExW((directory+L"BaldrVS-player-name.txt.tmp").c_str(),(directory+L"BaldrVS-player-name.txt").c_str(),MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)){
+  online_name_notice="Your name can be used now, but could not be saved here.";return false;
  }
- online::Digest result={};HCRYPTPROV provider=0;HCRYPTHASH hash=0;
- if(bytes.empty()||!CryptAcquireContextW(&provider,nullptr,nullptr,PROV_RSA_AES,CRYPT_VERIFYCONTEXT))return result;
- if(CryptCreateHash(provider,CALG_SHA_256,0,0,&hash)){
-  DWORD size=32;if(!CryptHashData(hash,bytes.data(),DWORD(bytes.size()),0)||!CryptGetHashParam(hash,HP_HASHVAL,result.data(),&size,0))result={};CryptDestroyHash(hash);
- }CryptReleaseContext(provider,0);return result;
+ online_name_notice.clear();return true;
 }
 static std::future<std::string> online_code_task;
 static char online_link[97]={};
-static void online_panel(float scale,unsigned p1,unsigned p2,unsigned map,unsigned wins,unsigned song){
+static void online_panel(float scale){
+ load_online_name();
  ImGui::SetCursorPos(ImVec2(42*scale,435*scale));
  ImGui::SeparatorText("ONLINE VS - DEVELOPMENT");
  ImGui::BeginDisabled(online_task.valid()||online_code_task.valid());ImGui::Checkbox("Online setup",&online_mode);ImGui::EndDisabled();
@@ -50,13 +46,12 @@ static void online_panel(float scale,unsigned p1,unsigned p2,unsigned map,unsign
   options.punchPath=directory+L"BaldrAutoPunch.dll";
   if(!online::parse_link_code(online_link,options.peer,options.token)){std::lock_guard<std::mutex> lock(online_mutex);online_progress.message="Paste a valid BALDR1 link code.";return;}
   if(role==0){sockaddr_in address={};online::parse_address(options.peer,address);options.port=ntohs(address.sin_port);}
-  auto& m=options.match;m.p1=p1;m.p2=p2;m.stage=map;m.target=wins;m.music=song;
-  m.equipment[0]=equipment_profiles.get(0,p1,equipment_catalog);m.equipment[1]=equipment_profiles.get(1,p2,equipment_catalog);
-  m.build=online_hash(directory+L"BaldrVSPlugin.dll");m.catalog=online_catalog_hash();
-  if(!m.valid()||m.build==online::Digest{}||m.catalog==online::Digest{}){
-   std::lock_guard<std::mutex> lock(online_mutex);online_progress.message="Load the equipment catalog and resolve both loadouts before connecting.";return;
+  options.playerName=online::trim_name(online_name);
+  if(!online::valid_player_name(options.playerName)){
+   std::lock_guard<std::mutex> lock(online_mutex);online_progress.message="Enter your player name before connecting.";return;
   }
-  online_chat=std::make_shared<online::ChatMailbox>(role);auto chat=online_chat;
+  save_online_name();
+  online_chat=std::make_shared<online::ChatMailbox>(role,options.playerName);auto chat=online_chat;
   online_cancel=false;online_task=std::async(std::launch::async,[options,chat]{return online::run_probe(options,online_cancel,[](const online::ProbeProgress& p){std::lock_guard<std::mutex> lock(online_mutex);online_progress=p;},chat);});
  };
  if(online_code_task.valid()&&online_code_task.wait_for(std::chrono::seconds(0))==std::future_status::ready){
@@ -64,7 +59,12 @@ static void online_panel(float scale,unsigned p1,unsigned p2,unsigned map,unsign
   if(code.empty()){std::lock_guard<std::mutex> lock(online_mutex);online_progress.message="Could not discover an Internet IPv4 address. Use an address override under Advanced.";}
   else {strcpy_s(online_link,code.c_str());if(!online_cancel)begin(0);}
  }
+ busy=online_task.valid()||online_code_task.valid();
  ImGui::BeginDisabled(busy);
+ ImGui::TextUnformatted("PLAYER NAME");ImGui::SetNextItemWidth(280*scale);
+ ImGui::InputText("##player-name",online_name,sizeof(online_name));
+ if(ImGui::IsItemDeactivatedAfterEdit())save_online_name();
+ if(!online_name_notice.empty())ImGui::TextWrapped("%s",online_name_notice.c_str());
  ImGui::TextUnformatted("LINK CODE");ImGui::SetNextItemWidth(560*scale);ImGui::InputText("##link",online_link,sizeof(online_link));
  if(ImGui::Button("Create link code / Host")){
   if(port>0&&port<=65535){
@@ -92,7 +92,7 @@ static void online_panel(float scale,unsigned p1,unsigned p2,unsigned map,unsign
  online::ProbeProgress progress;{std::lock_guard<std::mutex> lock(online_mutex);progress=online_progress;}
  ImGui::PushTextWrapPos(620*scale);ImGui::TextUnformatted(online_code_task.valid()?"Creating your link code...":progress.message.c_str());
  if(online_task.valid())ImGui::Text("Frame %u | %.0f ms | %u rollbacks",progress.frame,progress.ping,progress.rollbacks);
- ImGui::TextWrapped("Connection test only: native online combat is still in development. Both peers must select the same settings and loadouts. Share the link code with the other player.");ImGui::PopTextWrapPos();
+ ImGui::TextWrapped("Connection test only: native online combat is still in development. You can connect and chat without installing game files. Share the link code with the other player.");ImGui::PopTextWrapPos();
 }
 static void online_chat_panel(float scale,float left,float width){
  ImGui::SetNextWindowPos(ImVec2(left,0));ImGui::SetNextWindowSize(ImVec2(width,ImGui::GetIO().DisplaySize.y));
@@ -100,7 +100,8 @@ static void online_chat_panel(float scale,float left,float width){
  auto snapshot=online_chat->snapshot();static char text[online::chat_max_bytes+1]={};
  static std::weak_ptr<online::ChatMailbox> room;static uint64_t seen=0;static std::string notice;static bool focus=false;
  if(room.lock()!=online_chat){room=online_chat;seen=0;text[0]=0;notice.clear();focus=false;}
- ImGui::TextUnformatted(snapshot.connected?"Connected":"Not connected");
+ if(snapshot.connected)ImGui::TextWrapped("Connected to %s (P%u)",snapshot.peerName.c_str(),2-snapshot.player);
+ else ImGui::TextUnformatted("Not connected");
  bool changed=snapshot.revision!=seen;seen=snapshot.revision;
  ImGui::BeginChild("##chat-history",ImVec2(0,ImGui::GetContentRegionAvail().y-100*scale),ImGuiChildFlags_Borders);
  bool nearBottom=ImGui::GetScrollY()>=ImGui::GetScrollMaxY()-10*scale;
@@ -108,7 +109,8 @@ static void online_chat_panel(float scale,float left,float width){
  for(auto& line:snapshot.lines){
   ImGui::PushID(int(line.id));ImGui::PushID(line.local?1:0);
   const char* delivery=line.delivery==online::ChatDelivery::Pending?" - sending...":line.delivery==online::ChatDelivery::Failed?" - not delivered":"";
-  ImGui::TextColored(line.local?ImVec4(.15f,.35f,.7f,1):ImVec4(.65f,.25f,.2f,1),"%s (P%u)%s",line.local?"You":"Player",line.player+1,delivery);
+  const std::string& name=line.local?snapshot.localName:snapshot.peerName;
+  ImGui::PushTextWrapPos(0);ImGui::TextColored(line.local?ImVec4(.15f,.35f,.7f,1):ImVec4(.65f,.25f,.2f,1),"%s%s (P%u)%s",name.c_str(),line.local?" (you)":"",line.player+1,delivery);ImGui::PopTextWrapPos();
   ImGui::PushTextWrapPos(0);ImGui::TextUnformatted(line.text.c_str());ImGui::PopTextWrapPos();ImGui::Spacing();
   ImGui::PopID();ImGui::PopID();
  }

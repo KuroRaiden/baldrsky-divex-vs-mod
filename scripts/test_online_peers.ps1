@@ -19,9 +19,9 @@ if($LASTEXITCODE -or !$code){throw 'Link code creation failed'}
 $punch=@();if($AutoPunch){$punch=@(('"'+(Join-Path $build 'BaldrAutoPunch.dll')+'"'))}
 if($Chat){$punch+=@('--chat-test')}
 $hostLog=Join-Path $build 'online-test-host.txt';$joinLog=Join-Path $build 'online-test-join.txt'
-$h=Start-Process -FilePath $test -ArgumentList (@('0','24764','-', $token)+$punch) -WindowStyle Hidden -PassThru -RedirectStandardOutput $hostLog -RedirectStandardError (Join-Path $build 'online-test-host-error.txt')
+$h=Start-Process -FilePath $test -ArgumentList (@('0','24764','-', $token,'--name','"Test Host"')+$punch) -WindowStyle Hidden -PassThru -RedirectStandardOutput $hostLog -RedirectStandardError (Join-Path $build 'online-test-host-error.txt')
 [void]$h.Handle
-$j=Start-Process -FilePath $test -ArgumentList (@('1','24765',$code,'link')+$punch) -WindowStyle Hidden -PassThru -RedirectStandardOutput $joinLog -RedirectStandardError (Join-Path $build 'online-test-join-error.txt')
+$j=Start-Process -FilePath $test -ArgumentList (@('1','24765',$code,'link','--name','"Test Guest"')+$punch) -WindowStyle Hidden -PassThru -RedirectStandardOutput $joinLog -RedirectStandardError (Join-Path $build 'online-test-join-error.txt')
  [void]$j.Handle
  if(!$h.WaitForExit(45000)){throw 'Host test timed out'}
  if(!$j.WaitForExit(5000)){throw 'Join test timed out'}

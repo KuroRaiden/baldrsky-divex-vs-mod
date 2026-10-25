@@ -24,6 +24,7 @@
 #include "equipment_menu.h"
 #ifdef VS_ONLINE
 #include "online_menu.h"
+#include "embedded_catalogs.h"
 #endif
 #endif
 
@@ -49,10 +50,23 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
     GetModuleFileNameW(nullptr,programPath,32768);
     directory=programPath; directory=directory.substr(0,directory.find_last_of(L"\\")+1);
     load_choices(L"mechas.tsv",mechas); load_choices(L"stages.tsv",stages);
+#ifdef VS_ONLINE
+    if(mechas.empty())embedded_choices(201,mechas);
+    if(stages.empty())embedded_choices(202,stages);
+    status="Choose a player name and connect with a link code.";
+    if(arguments&&!strcmp(arguments,"--verify-catalogs")){
+     std::vector<Choice> a,b,c;
+     return embedded_choices(201,a)&&a.size()==99&&embedded_choices(202,b)&&b.size()==220&&embedded_choices(203,c)&&c.size()==92?0:22;
+    }
+#endif
 #ifdef VS_NATIVE_START
     music={{0xffffffffu,"Auto"},{0xfffffffeu,"Random"}};
     load_equipment();
-    std::vector<Choice> tracks;load_choices(L"music.tsv",tracks);music.insert(music.end(),tracks.begin(),tracks.end());
+    std::vector<Choice> tracks;load_choices(L"music.tsv",tracks);
+#ifdef VS_ONLINE
+    if(tracks.empty())embedded_choices(203,tracks);
+#endif
+    music.insert(music.end(),tracks.begin(),tracks.end());
 #endif
     if(arguments && !strcmp(arguments,"--smoke")){
         std::ofstream log(directory+L"launcher-smoke.txt");
@@ -282,7 +296,11 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         ImGui::PushTextWrapPos(io.DisplaySize.x-30*main_scale);
         ImGui::TextUnformatted(startup.valid()?"Starting game and preparing VS...":status.c_str());ImGui::PopTextWrapPos();
 #ifdef VS_NATIVE_START
-        if(equipment_catalog.empty()){
+        if(equipment_catalog.empty()
+#ifdef VS_ONLINE
+          && !online_mode
+#endif
+        ){
          ImGui::BeginDisabled(startup.valid()||battle);
          if(ImGui::Button("Load equipment catalog")){
           equipment_scan=true;
@@ -291,7 +309,7 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         }
         equipment_editor(main_scale);
 #ifdef VS_ONLINE
-        if(!mechas.empty()&&!stages.empty()&&!music.empty())online_panel(main_scale,mechas[p1].id,mechas[p2].id,stages[stage].id,targets[preset],music[track].id);
+        online_panel(main_scale);
 #endif
 #endif
         ImGui::End();
