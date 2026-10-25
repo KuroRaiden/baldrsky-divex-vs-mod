@@ -1,4 +1,4 @@
-param([switch]$AutoPunch,[int]$LagMs=0,[int]$JitterMs=0,[int]$LossPercent=0)
+param([switch]$AutoPunch,[switch]$Chat,[int]$LagMs=0,[int]$JitterMs=0,[int]$LossPercent=0)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $build=Join-Path $root 'online-build'
@@ -17,6 +17,7 @@ if($LagMs -or $JitterMs -or $LossPercent){
 $code=& $test --make-code $endpoint $token
 if($LASTEXITCODE -or !$code){throw 'Link code creation failed'}
 $punch=@();if($AutoPunch){$punch=@(('"'+(Join-Path $build 'BaldrAutoPunch.dll')+'"'))}
+if($Chat){$punch+=@('--chat-test')}
 $hostLog=Join-Path $build 'online-test-host.txt';$joinLog=Join-Path $build 'online-test-join.txt'
 $h=Start-Process -FilePath $test -ArgumentList (@('0','24764','-', $token)+$punch) -WindowStyle Hidden -PassThru -RedirectStandardOutput $hostLog -RedirectStandardError (Join-Path $build 'online-test-host-error.txt')
 [void]$h.Handle

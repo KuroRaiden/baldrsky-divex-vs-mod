@@ -4,7 +4,7 @@ Private collaboration workspace for KuroRaiden and armonte. Goal: two human play
 
 ## Online VS development
 
-The separate `online-vs` branch is building a two-player online launcher with AutoPunch, GekkoNet and shareable link codes. Its current build tests connections and rollback with a standalone simulation; **native online combat is not ready**. The game's built-in replay is the determinism baseline, with two identical 600-frame native audit runs so far. See [online implementation, replay findings and testing](docs/VS-online.md). The public latest release remains the local VS build.
+The separate `online-vs` branch is building a two-player online launcher with AutoPunch, GekkoNet and shareable link codes and ImGui player chat. Its current build tests connections and rollback with a standalone simulation; **native online combat is not ready**. The game's built-in replay is the determinism baseline, with two identical 600-frame native audit runs so far. See [online implementation, replay findings and testing](docs/VS-online.md). The public latest release remains the local VS build.
 
 ## Compatibility
 

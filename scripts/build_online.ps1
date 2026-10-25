@@ -52,3 +52,5 @@ Copy-Item -LiteralPath (Join-Path $AutoPunchPath 'autopunch-inject/detours/LICEN
 Copy-Item -LiteralPath (Join-Path $ImGuiPath 'LICENSE.txt') -Destination (Join-Path $out 'ImGui-LICENSE.txt') -Force
 & (Join-Path $out 'test_online.exe')
 if($LASTEXITCODE){throw 'Online tests failed'}
+& (Join-Path $out 'test_online_chat.exe')
+if($LASTEXITCODE){throw 'Online chat tests failed'}

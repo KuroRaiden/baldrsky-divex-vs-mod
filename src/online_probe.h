@@ -22,7 +22,7 @@ struct ProbeState {
 };
 inline Input probe_input(unsigned role,unsigned frame){return {((frame/17+role)%2?1u:2u)|((frame+role*7)%13==0?0x100u:0u)};}
 struct ProbeProgress {std::string message="Idle";unsigned frame=0,rollbacks=0;float ping=0;bool success=false,done=false;};
-struct ProbeOptions {unsigned role=0,port=14764,frames=600;std::string peer;Token token={};Manifest match;bool punch=false;std::wstring punchPath;};
+struct ProbeOptions {unsigned role=0,port=14764,frames=600;std::string peer;Token token={};Manifest match;bool punch=false;std::wstring punchPath;bool keepChat=false;};
 inline std::atomic_bool punch_active=false;
 inline bool initialize_punch(const std::wstring& path,std::string& error){
  // Our build keeps DllMain inert and starts AutoPunch explicitly, outside the
@@ -34,14 +34,14 @@ inline bool initialize_punch(const std::wstring& path,std::string& error){
  auto start=(BOOL(WINAPI*)())GetProcAddress(module,"StartAutoPunch");
  if(!start||!start()){error="AutoPunch could not initialize.";return false;}punch_active=true;return true;
 }
-inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& cancel,const std::function<void(const ProbeProgress&)>& update={}){
+inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& cancel,const std::function<void(const ProbeProgress&)>& update={},std::shared_ptr<ChatMailbox> chat={}){
  ProbeProgress result;auto publish=[&](const std::string& s){result.message=s;if(update)update(result);};
  if(options.punch&&!initialize_punch(options.punchPath,result.message)){result.done=true;return result;}
- Transport transport;
+ Transport transport;transport.chat(chat);
  if(!transport.open(options.role,options.port,options.peer,options.token,options.match)){result.message=transport.error();result.done=true;return result;}
  publish(options.role?"Connecting to host...":"Hosting: waiting for the peer...");
  uint64_t begin=GetTickCount64();
- while(!cancel&&!transport.ready()&&GetTickCount64()-begin<15000){
+ while(!cancel&&!transport.ready()&&((options.keepChat&&options.role==0)||GetTickCount64()-begin<30000)){
   transport.poll();transport.discard_results();if(!transport.error().empty()){result.message=transport.error();result.done=true;return result;}Sleep(2);
  }
  if(cancel||!transport.ready()){result.message=cancel?"Connection cancelled.":"No matching peer replied. Check address, port and room key.";result.done=true;return result;}
@@ -100,7 +100,15 @@ inline ProbeProgress run_probe(const ProbeOptions& options,std::atomic_bool& can
   result.success=checkpoint.frame==options.frames&&checkpoint.checksum()==expected.checksum()&&transport.hasResult
    &&transport.remoteFrame==checkpoint.frame&&transport.remoteChecksum==checkpoint.checksum();
  }
- result.done=true;publish(cancel?"Connection test cancelled.":result.success?"Connection test passed. Native game rollback is still in development.":"Connection test failed or timed out; combat was not started.");
+ if(result.success&&options.keepChat&&chat&&!cancel){
+  publish("Connection test passed. Player chat connected.");
+  while(!cancel&&!transport.disconnected()&&transport.error().empty()){
+   gekko_network_poll(session);if(update)update(result);Sleep(20);
+  }
+  result.done=true;publish(cancel?"Disconnected.":"The other player disconnected.");
+ }else{
+  result.done=true;publish(cancel?"Connection test cancelled.":result.success?"Connection test passed. Native game rollback is still in development.":"Connection test failed or timed out; combat was not started.");
+ }
  transport.send(Kind::Bye);return result;
 }
 }

@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <functional>
 #include "online_protocol.h"
+#include "online_chat.h"
 #include <gekkonet.h>
 
 namespace online {
@@ -27,6 +28,7 @@ class Transport {
  sockaddr_in peer_={};unsigned role_=0;Token token_={};std::vector<uint8_t> manifest_;
  uint64_t lastHello_=0,lastReceive_=0;std::vector<GekkoNetResult*> received_;
  std::string error_;bool left_=false,libraryOwnsResults_=false;
+ std::shared_ptr<ChatMailbox> chat_;
  inline static thread_local Transport* active_=nullptr;
  GekkoNetAdapter adapter_={send_callback,receive_callback,free_callback};
  static void send_callback(GekkoNetAddress*,const char* data,int length){if(active_&&length>0)active_->send(Kind::Data,(const uint8_t*)data,size_t(length));}
@@ -50,7 +52,8 @@ public:
   u_long nonblocking=1;if(ioctlsocket(socket_,FIONBIO,&nonblocking)){error_="Could not configure the UDP socket.";close();return false;}
   lastReceive_=GetTickCount64();return true;
  }
- void close(){release_results();if(socket_!=INVALID_SOCKET){closesocket(socket_);socket_=INVALID_SOCKET;}if(wsa_){WSACleanup();wsa_=false;}if(active_==this)active_=nullptr;}
+ void close(){if(chat_)chat_->connected(false);release_results();if(socket_!=INVALID_SOCKET){closesocket(socket_);socket_=INVALID_SOCKET;}if(wsa_){WSACleanup();wsa_=false;}if(active_==this)active_=nullptr;}
+ void chat(std::shared_ptr<ChatMailbox> mailbox){chat_=std::move(mailbox);}
  bool send(Kind kind,const uint8_t* bytes=nullptr,size_t n=0){
   if(socket_==INVALID_SOCKET||!pinned_)return false;auto packet=envelope(kind,role_,token_,bytes,n);if(packet.empty())return false;
   return sendto(socket_,(const char*)packet.data(),int(packet.size()),0,(sockaddr*)&peer_,sizeof(peer_))==int(packet.size());
@@ -74,6 +77,10 @@ public:
    }
    if(!ready())continue;lastReceive_=now;
    if(packet.kind==Kind::Bye){left_=true;continue;}
+   if(packet.kind==Kind::Chat){
+    if(chat_){auto id=chat_->receive(packet.data,packet.size);if(id){std::vector<uint8_t> ack;put32(ack,id);send(Kind::ChatAck,ack.data(),ack.size());}}continue;
+   }
+   if(packet.kind==Kind::ChatAck){if(chat_)chat_->acknowledge(packet.data,packet.size);continue;}
    if(packet.kind==Kind::Result){if(packet.size==8){remoteFrame=get32(packet.data);remoteChecksum=get32(packet.data+4);hasResult=true;}continue;}
    if(packet.kind!=Kind::Data||!packet.size)continue;
    auto result=(GekkoNetResult*)calloc(1,sizeof(GekkoNetResult));if(!result){error_="Network buffer allocation failed.";break;}
@@ -82,6 +89,7 @@ public:
    memcpy(result->addr.data,&peer_,sizeof(peer_));memcpy(result->data,packet.data,packet.size);
    result->addr.size=sizeof(peer_);result->data_len=unsigned(packet.size);received_.push_back(result);
   }
+  if(chat_){chat_->connected(ready()&&!disconnected()&&error_.empty());auto data=chat_->next_packet(now);if(!data.empty())send(Kind::Chat,data.data(),data.size());}
  }
  bool hasResult=false;uint32_t remoteFrame=0,remoteChecksum=0;
  void discard_results(){release_results();}

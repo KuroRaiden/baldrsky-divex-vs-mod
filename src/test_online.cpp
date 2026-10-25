@@ -7,13 +7,38 @@
 int main(int argc,char** argv){
  using namespace online;
  if(argc==4&&!strcmp(argv[1],"--make-code")){Token key;if(!token_from_text(argv[3],key))return 2;auto code=make_link_code(argv[2],key);if(code.empty())return 2;puts(code.c_str());return 0;}
- if(argc==5||argc==6){
+ if(argc>=5){
   ProbeOptions options;options.role=std::stoul(argv[1]);options.port=std::stoul(argv[2]);options.peer=argv[3];options.frames=180;
   if(options.peer.rfind("BALDR1",0)==0){if(!parse_link_code(argv[3],options.peer,options.token))return 2;}
   else if(!token_from_text(argv[4],options.token))return 2;
-  if(argc==6){options.punch=true;std::string path=argv[5];options.punchPath.assign(path.begin(),path.end());}
+  bool chatTest=false;for(int i=5;i<argc;i++){
+   if(!strcmp(argv[i],"--chat-test")){chatTest=true;options.keepChat=true;}
+   else{options.punch=true;std::string path=argv[i];options.punchPath.assign(path.begin(),path.end());}
+  }
   for(auto& slots:options.match.equipment)slots.fill(equipment_empty);
-  std::atomic_bool cancel=false;auto result=run_probe(options,cancel);
+  auto chat=chatTest?std::make_shared<ChatMailbox>(options.role):nullptr;
+  std::atomic_bool cancel=false;bool early=false,late=false;uint64_t completeAt=0;
+  auto verifyChat=[&](){
+   if(!chat)return false;auto snapshot=chat->snapshot();unsigned delivered=0,received=0;
+   for(auto& line:snapshot.lines){
+    if(line.local){if(line.delivery==ChatDelivery::Delivered)delivered++;}
+    else{
+     unsigned remote=1-options.role;
+     bool expected=line.text=="Hello from P"+std::to_string(remote+1)
+       ||line.text==std::string(512,char('a'+remote))
+       ||line.text=="After the test: 100% ### from P"+std::to_string(remote+1);
+     if(!expected)return false;received++;
+    }
+   }return delivered==3&&received==3&&snapshot.lines.size()==6;
+  };
+  auto update=[&](const ProbeProgress& progress){
+   if(!chat)return;
+   if(chat->snapshot().connected&&!early){early=true;chat->send_text("Hello from P"+std::to_string(options.role+1));chat->send_text(std::string(512,char('a'+options.role)));}
+   if(progress.message=="Connection test passed. Player chat connected."&&!late){late=true;chat->send_text("After the test: 100% ### from P"+std::to_string(options.role+1));}
+   if(late&&verifyChat()){if(!completeAt)completeAt=GetTickCount64();else if(GetTickCount64()-completeAt>1000)cancel=true;}
+  };
+  auto result=run_probe(options,cancel,update,chat);
+  if(chatTest){bool good=late&&verifyChat();printf("CHAT %s: three messages each direction, including a 512-byte message and post-test chat.\n",good?"PASS":"FAIL");result.success&=good;}
   printf("%s frames=%u rollbacks=%u ping=%.1f\n",result.message.c_str(),result.frame,result.rollbacks,result.ping);return result.success?0:1;
  }
  Token token;assert(token_from_text("0123456789abcdef0123456789abcdef",token));

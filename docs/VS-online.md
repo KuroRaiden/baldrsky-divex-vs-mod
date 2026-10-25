@@ -12,6 +12,14 @@ Both peers currently select the same match settings and explicit loadouts. A bou
 
 The connection test uses real UDP and the actual GekkoNet session API, with an eight-frame prediction window, two-frame local input delay, complete save/load requests and desync checks. Its simulation is a small standalone deterministic test model. It never reads or writes native combat through predicted inputs. Both peers must match each other's final checkpoint and the expected replay checksum. A successful connection therefore does not claim native game rollback works. Online Start Battle stays disabled until a verified native bridge exists; turning off Online setup retains local startup behavior.
 
+## Player chat
+
+The ImGui player-chat pane sits beside the match controls. After peers connect with a link code, either player can type a message and press Enter or Send. Messages show You/Player and P1/P2 labels, wrap in a scrollable history, and display pending or failed delivery. The transcript follows new messages when already near its bottom. It retains the most recent 100 lines in memory and resets for a new connection; no chat log is written to disk.
+
+Chat uses separate control packets on the existing peer socket, outside Gekko input/state events. Each direction uses ordered sequence numbers, acknowledgements and 250 ms retries; duplicates are acknowledged without appearing twice. Messages allow up to 512 UTF-8 bytes and eight pending sends. Invalid/truncated UTF-8, control characters and oversized messages are rejected. Text is rendered through ImGui's plain-text API. Incoming packets still require the existing room/role/endpoint handshake. The wire protocol is now version 2, so both players need this chat build; the link-code format remains BALDR1.
+
+After the synchronization test passes, the GUI keeps the peer connection open for chat until Disconnect, peer departure, timeout or launcher close. Hosts wait for the invited player until cancelled. The connection test does not start native combat. Unit tests cover validation, loss/retries, duplicate/out-of-order handling, queue/history bounds and disconnection. Real two-peer tests send three messages each direction, including a maximum-size message and a message after test completion. Direct and AutoPunch tests with 60 ms delay, 20 ms jitter and 5% loss pass without duplicate transcript entries. Run `scripts/test_online_peers.ps1 -Chat` or add `-Chat -AutoPunch -LagMs 60 -JitterMs 20 -LossPercent 5` for that integration check.
+
 ## Dependencies
 
 Dependencies are built for Win32 and pinned to inspected upstream revisions:

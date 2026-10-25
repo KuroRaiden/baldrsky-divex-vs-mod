@@ -89,7 +89,13 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #else
         380;
 #endif
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, windowTitle, WS_OVERLAPPEDWINDOW, 100, 100, (int)(660 * main_scale), (int)(windowHeight * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
+    const int windowWidth=
+#ifdef VS_ONLINE
+        1020;
+#else
+        660;
+#endif
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, windowTitle, WS_OVERLAPPEDWINDOW, 100, 100, (int)(windowWidth * main_scale), (int)(windowHeight * main_scale), nullptr, nullptr, wc.hInstance, nullptr);
 
     // Initialize Direct3D
     if (!CreateDeviceD3D(hwnd))
@@ -191,7 +197,12 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
         ImGui::NewFrame();
 
         ImGui::SetNextWindowPos(ImVec2(0,0));
-        ImGui::SetNextWindowSize(io.DisplaySize);
+        float setupWidth=io.DisplaySize.x;
+#ifdef VS_ONLINE
+        const float chatWidth=310*main_scale;
+        setupWidth-=chatWidth+8*main_scale;
+#endif
+        ImGui::SetNextWindowSize(ImVec2(setupWidth,io.DisplaySize.y));
         ImGui::Begin("VS Setup",nullptr,ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoMove);
         static int p1=0,p2=1,stage=0;
         ImGui::SetCursorPos(ImVec2(42*main_scale,42*main_scale));
@@ -284,6 +295,9 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR arguments, int)
 #endif
 #endif
         ImGui::End();
+#ifdef VS_ONLINE
+        online_chat_panel(main_scale,setupWidth+8*main_scale,chatWidth);
+#endif
         // Rendering
         ImGui::Render();
         const float clear_color_with_alpha[4] = { clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w };

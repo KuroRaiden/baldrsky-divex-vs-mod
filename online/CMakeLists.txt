@@ -22,6 +22,8 @@ set_target_properties(BaldrAutoPunch PROPERTIES LIBRARY_OUTPUT_DIRECTORY_RELEASE
 add_executable(test_online "${ROOT}/src/test_online.cpp")
 target_compile_options(test_online PRIVATE /UNDEBUG)
 target_link_libraries(test_online PRIVATE GekkoNet ws2_32 winhttp)
+add_executable(test_online_chat "${ROOT}/src/test_online_chat.cpp")
+target_compile_options(test_online_chat PRIVATE /UNDEBUG)
 add_executable(BaldrVSLauncherOnline WIN32 "${ROOT}/src/vs_launcher_menu.cpp" "${ROOT}/src/launcher.rc"
  "${IMGUI_PATH}/imgui.cpp" "${IMGUI_PATH}/imgui_draw.cpp" "${IMGUI_PATH}/imgui_tables.cpp" "${IMGUI_PATH}/imgui_widgets.cpp"
  "${IMGUI_PATH}/backends/imgui_impl_win32.cpp" "${IMGUI_PATH}/backends/imgui_impl_dx11.cpp")
